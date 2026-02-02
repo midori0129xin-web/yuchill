@@ -1,191 +1,403 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+    <link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="YUCHILL">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>YUCHILL v72 iPad</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; }
         .tab-active { background: #4f46e5 !important; color: white !important; }
-        input, select, textarea { font-size: 16px !important; border: 1px solid #cbd5e1 !important; font-weight: 800; }
-        /* 解決 iOS 點擊反應慢的問題 */
-        button, [onclick] { cursor: pointer; touch-action: manipulation; }
+        .void-line { text-decoration: line-through; opacity: 0.15; filter: grayscale(1); pointer-events: none; }
+        input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
+        .log-title { font-weight: 900; font-size: 16px; }
+        .log-detail { font-weight: 800; font-size: 14px; line-height: 1.6; color: #334155; }
     </style>
 </head>
-<body class="pb-20">
+<body class="pb-10">
 
-    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600 text-sm">v72 iPad</span></h1>
+    <nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600">v71</span></h1>
             <div class="flex bg-slate-200 rounded-2xl p-1">
-                <button onclick="switchTab('main')" id="tab-main" class="tab-active px-6 py-2 rounded-xl font-black">業務</button>
-                <button onclick="switchTab('report')" id="tab-report" class="px-6 py-2 rounded-xl font-black text-slate-500">報表</button>
+                <button onclick="switchTab('main')" id="tab-main" class="tab-active px-8 py-2 rounded-xl font-black">業務處理</button>
+                <button onclick="switchTab('report')" id="tab-report" class="px-8 py-2 rounded-xl font-black text-slate-500">利潤報表</button>
             </div>
-            <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm active:scale-95">備份</button>
+            <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm">備份資料</button>
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto p-4 md:p-8">
+    <div class="max-w-7xl mx-auto p-4 mt-6">
         <div id="page-main">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div class="lg:col-span-5">
-                    <form id="main-form" class="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl border border-white space-y-6">
+                    <form id="main-form" class="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-white space-y-6">
                         <div class="flex bg-slate-100 rounded-2xl p-1 font-black">
-                            <button type="button" onclick="setMode('sell')" id="m-sell" class="flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600">銷售</button>
-                            <button type="button" onclick="setMode('buy')" id="m-buy" class="flex-1 py-4 rounded-xl text-slate-400">進貨</button>
+                            <button type="button" onclick="setMode('sell')" id="m-sell" class="flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600">銷售 / 服務</button>
+                            <button type="button" onclick="setMode('buy')" id="m-buy" class="flex-1 py-4 rounded-xl text-slate-400">採購 / 進貨</button>
                         </div>
-                        
                         <div class="flex gap-4">
                             <div class="flex-1">
                                 <label class="text-xs font-black text-slate-400 ml-1">交易日期</label>
-                                <input type="date" id="f-date" class="w-full p-4 rounded-2xl bg-slate-50 border outline-none h-14">
+                                <input type="date" id="f-date" onchange="autoRefreshBarcode()" class="w-full p-4 rounded-2xl bg-slate-50 border outline-none">
                             </div>
                             <div id="buy-qty-area" class="hidden w-32">
                                 <label class="text-xs font-black text-orange-500 ml-1">進貨數量</label>
-                                <input type="number" id="f-qty" value="1" min="1" inputmode="numeric" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 text-center border h-14">
+                                <input type="number" id="f-qty" value="1" min="1" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 text-center border">
                             </div>
                         </div>
-
-                        <div class="p-5 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
-                            <input type="text" id="f-barcode" placeholder="輸入條碼" class="w-full p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border h-14">
+                        <div class="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
+                            <div class="flex gap-2">
+                                <input type="text" id="f-barcode" oninput="handleBarcodeInput(this.value)" placeholder="條碼區域" class="flex-1 p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border">
+                                <button type="button" onclick="generateNextBarcode()" class="bg-white px-4 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm">🔄</button>
+                            </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <select id="f-car-type" class="p-4 rounded-xl font-black bg-white border h-14">
+                                <select id="f-car-type" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border">
                                     <option value="">- 車組 -</option>
-                                    <option value="J">J寄賣款</option>
-                                    <option value="G">G青春版</option>
-                                    <option value="W">W高配版</option>
+                                    <option data-code="J">J寄賣款(8)</option><option data-code="J">J寄賣款/車</option><option data-code="G">G青春版(8)</option>
+                                    <option data-code="Q">Q特惠版</option><option data-code="W">W高配版</option><option data-code="Q">Q特惠X防盜</option>
+                                    <option data-code="S">維修服務</option>
                                 </select>
-                                <select id="f-color" class="p-4 rounded-xl font-black bg-white border h-14">
+                                <select id="f-color" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border">
                                     <option value="">- 顏色 -</option>
-                                    <option value="黑">黑</option><option value="白">白</option><option value="粉">粉</option>
+                                    <option value="1">黑</option><option value="2">白</option><option value="3">粉</option><option value="4">藍</option><option value="5">紫</option><option value="6">紅</option>
                                 </select>
                             </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" id="f-vin" placeholder="車架號" class="p-4 rounded-xl font-bold bg-white text-sm border">
+                                <input type="text" id="f-motor" placeholder="電機號" class="p-4 rounded-xl font-bold bg-white text-sm border">
+                            </div>
+                            <select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border">
+                                <option value="">- 電池 -</option><option>8AH</option><option>20AH</option><option>30AH</option>
+                            </select>
                         </div>
-
+                        <div class="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-3">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 1</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
+                                <select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 2</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
+                                <select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 3</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
+                                <select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 4</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 border-t pt-4">
+                                <input type="text" id="f-custom-item" placeholder="自訂項目" class="p-4 rounded-xl font-bold bg-white text-sm border">
+                                <input type="number" id="f-custom-cost" placeholder="額外成本" class="p-4 rounded-xl font-bold bg-white text-red-600 text-sm border">
+                            </div>
+                        </div>
+                        <input type="text" id="f-cust" placeholder="備註" class="w-full p-5 rounded-2xl bg-white border outline-none font-bold">
                         <div class="grid grid-cols-2 gap-4">
-                            <input type="number" id="f-cash" placeholder="現金收" inputmode="decimal" class="p-5 rounded-2xl bg-amber-50 font-black text-amber-800 text-center border h-16">
-                            <input type="number" id="f-bank" placeholder="轉帳收" inputmode="decimal" class="p-5 rounded-2xl bg-blue-50 font-black text-blue-800 text-center border h-16">
+                            <input type="number" id="f-cash" placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border">
+                            <input type="number" id="f-bank" placeholder="🏦 轉帳收" class="p-6 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl border">
                         </div>
-
-                        <div class="flex gap-3 pt-2">
-                            <button type="button" onclick="resetForm()" class="px-6 py-6 rounded-3xl font-black bg-slate-200 text-slate-600">重置</button>
-                            <button type="button" onclick="doSave()" class="flex-1 py-6 rounded-3xl font-black text-2xl bg-slate-900 text-white shadow-xl active:scale-95">儲存紀錄</button>
+                        <div class="flex gap-3">
+                            <button type="button" onclick="resetForm()" class="px-8 py-6 rounded-3xl font-black bg-slate-200 text-slate-600">重置</button>
+                            <button type="button" onclick="doSave()" class="flex-1 py-6 rounded-3xl font-black text-2xl bg-slate-900 text-white shadow-xl">確認儲存</button>
                         </div>
                     </form>
                 </div>
-                
-                <div class="lg:col-span-7">
-                    <div id="stk-grid" class="bg-white p-6 rounded-[2.5rem] shadow-sm min-h-[200px]">
-                        <h3 class="font-black mb-4">近期紀錄</h3>
-                        <div id="log-container" class="space-y-2"></div>
+                <div class="lg:col-span-7 space-y-6">
+                    <div id="stk-grid" class="grid grid-cols-3 md:grid-cols-5 gap-3"></div>
+                    <div class="bg-white rounded-[2.5rem] shadow-xl border overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 border-b">
+                                <tr class="text-slate-400 font-black text-xs uppercase"><th class="p-6">摘要</th><th class="p-6">內容</th><th class="p-6 text-right">金額</th><th class="p-6 text-center">刪</th></tr>
+                            </thead>
+                            <tbody id="log-list" class="divide-y divide-slate-100"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="page-report" class="hidden">
-            <div class="bg-white p-8 rounded-[2.5rem] shadow-xl">
-                <h2 class="text-2xl font-black mb-6">業務報表</h2>
-                <div id="report-content" class="text-slate-500">尚無資料</div>
+            <div id="fin-assets" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"></div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-8 bg-white rounded-[2.5rem] shadow-xl border p-8 overflow-x-auto">
+                    <h3 class="font-black text-xl mb-6 flex items-center"><span class="w-2 h-6 bg-indigo-600 rounded-full mr-2"></span>銷售利潤明細</h3>
+                    <div id="profit-table-area"></div>
+                </div>
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="bg-slate-900 text-white rounded-[2.5rem] p-8 shadow-2xl">
+                        <h3 class="font-black text-xl mb-4">利潤提領紀錄</h3>
+                        <div class="space-y-4">
+                            <input type="number" id="f-withdraw" placeholder="輸入提領金額" class="w-full p-4 rounded-xl bg-slate-800 border-none text-white text-2xl font-black">
+                            <button onclick="addWithdraw()" class="w-full py-4 rounded-xl bg-indigo-500 font-black hover:bg-indigo-400 transition">確認提領</button>
+                        </div>
+                        <div id="withdraw-list" class="mt-8 space-y-2 max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 初始化與基礎變數
-        let records = JSON.parse(localStorage.getItem('yuchill_data') || '[]');
+        const COST_MAP = { "J寄賣款(8)": 9000, "J寄賣款/車": 7500, "G青春版(8)": 5980, "Q特惠版": 5000, "W高配版": 5335, "Q特惠X防盜": 4000, "8AH": 0, "20AH": 1650, "30AH": 1970, "兒童座椅": 500, "定時器": 90, "水杯架": 70, "雙杯手機架": 155, "後照鏡2長": 75, "後座靠背": 100, "後腳踏/塑": 80, "後腳踏/鐵": 60, "維修服務": 0 };
+        const KEY = "YUCHILL_DB_V71";
+        // 結構更新：新增 withdraws 陣列
+        let db = JSON.parse(localStorage.getItem(KEY)) || { 
+            stock: { "J寄賣款(8)":0, "J寄賣款/車":0, "G青春版(8)":0, "Q特惠版":0, "W高配版":0, "Q特惠X防盜":0, "8AH":0, "20AH":0, "30AH":0, "兒童座椅":0, "定時器":0, "水杯架":0, "雙杯手機架":0, "後照鏡2長":0, "後座靠背":0, "後腳踏/塑":0, "後腳踏/鐵":0 }, 
+            logs: [],
+            withdraws: [] 
+        };
         let currentMode = 'sell';
 
-        // 設定今日日期
-        document.getElementById('f-date').valueAsDate = new Date();
-
-        function switchTab(tab) {
-            document.getElementById('page-main').classList.toggle('hidden', tab !== 'main');
-            document.getElementById('page-report').classList.toggle('hidden', tab !== 'report');
-            document.getElementById('tab-main').className = tab === 'main' ? 'tab-active px-6 py-2 rounded-xl font-black' : 'px-6 py-2 rounded-xl font-black text-slate-500';
-            document.getElementById('tab-report').className = tab === 'report' ? 'tab-active px-6 py-2 rounded-xl font-black' : 'px-6 py-2 rounded-xl font-black text-slate-500';
-            if(tab === 'report') renderReport();
+        function generateNextBarcode() {
+            const carEl = document.getElementById('f-car-type');
+            const carCode = carEl.options[carEl.selectedIndex]?.dataset.code;
+            const colorCode = document.getElementById('f-color').value || "0";
+            const dateStr = document.getElementById('f-date').value;
+            if(!carCode || !dateStr) return "";
+            const shortDate = dateStr.replace(/-/g, '').substring(2);
+            const matchedLogs = db.logs.filter(l => !l.void && l.barcode && l.barcode.startsWith(carCode) && /^\d{2}$/.test(l.barcode.slice(-2)));
+            let maxNum = 0;
+            if (matchedLogs.length > 0) {
+                const allNums = matchedLogs.map(l => parseInt(l.barcode.slice(-2)));
+                maxNum = Math.max(...allNums);
+            }
+            const final = `${carCode}${colorCode}${shortDate}${(maxNum + 1).toString().padStart(2, '0')}`;
+            document.getElementById('f-barcode').value = final;
+            return final;
         }
 
-        function setMode(mode) {
-            currentMode = mode;
-            document.getElementById('m-sell').className = mode === 'sell' ? 'flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600' : 'flex-1 py-4 rounded-xl text-slate-400';
-            document.getElementById('m-buy').className = mode === 'buy' ? 'flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600' : 'flex-1 py-4 rounded-xl text-slate-400';
-            document.getElementById('buy-qty-area').classList.toggle('hidden', mode !== 'buy');
-        }
-
-        function doSave() {
-            const data = {
-                date: document.getElementById('f-date').value,
-                mode: currentMode,
-                barcode: document.getElementById('f-barcode').value.toUpperCase(),
-                car: document.getElementById('f-car-type').value,
-                color: document.getElementById('f-color').value,
-                cash: Number(document.getElementById('f-cash').value) || 0,
-                bank: Number(document.getElementById('f-bank').value) || 0,
-                timestamp: new Date().getTime()
-            };
-
-            if(!data.barcode) { alert('請輸入條碼'); return; }
-
-            records.push(data);
-            try {
-                localStorage.setItem('yuchill_data', JSON.stringify(records));
-                alert('✅ 儲存成功！');
-                resetForm();
-                renderLogs();
-            } catch (e) {
-                alert('儲存失敗，可能是空間滿了或無痕模式限制');
+        function handleBarcodeInput(val) {
+            if(currentMode !== 'sell' || val.length < 5) return;
+            const target = db.logs.find(l => !l.void && l.type === 'buy' && l.barcode === val.toUpperCase());
+            if(target) {
+                document.getElementById('f-car-type').value = target.carName;
+                document.getElementById('f-vin').value = target.vin || "";
+                document.getElementById('f-motor').value = target.motor || "";
+                document.getElementById('f-batt').value = target.batt || "";
+                document.getElementById('f-color').value = val.substring(1,2);
+                document.getElementById('f-barcode').classList.add('bg-green-50');
             }
         }
 
-        function resetForm() {
-            document.getElementById('f-barcode').value = '';
-            document.getElementById('f-cash').value = '';
-            document.getElementById('f-bank').value = '';
+        function autoRefreshBarcode() { if(currentMode === 'buy') generateNextBarcode(); }
+
+        function doSave() {
+            const dateVal = document.getElementById('f-date').value;
+            if(!dateVal) return alert("請選擇日期");
+            const qty = currentMode === 'buy' ? (parseInt(document.getElementById('f-qty').value) || 1) : 1;
+            const carName = document.getElementById('f-car-type').value || "維修項目";
+            const ps = Array.from(document.querySelectorAll('.f-ps')).map(s => s.value);
+
+            for(let i=0; i<qty; i++) {
+                let codeToUse = (currentMode === 'buy') ? generateNextBarcode() : document.getElementById('f-barcode').value;
+                if(!codeToUse && currentMode==='sell') codeToUse = "手動銷貨";
+
+                let baseCost = (COST_MAP[carName] || 0) + (COST_MAP[document.getElementById('f-batt').value] || 0);
+                ps.forEach(p => { if(p) baseCost += (COST_MAP[p] || 0); });
+                baseCost += (parseInt(document.getElementById('f-custom-cost').value) || 0);
+
+                const entry = {
+                    date: dateVal, carName, ps: [...ps], barcode: codeToUse,
+                    vin: document.getElementById('f-vin').value, motor: document.getElementById('f-motor').value,
+                    cust: document.getElementById('f-cust').value, baseCost: baseCost,
+                    type: currentMode, void: false,
+                    cash: i===0 ? (parseInt(document.getElementById('f-cash').value)||0) : 0,
+                    bank: i===0 ? (parseInt(document.getElementById('f-bank').value)||0) : 0,
+                    customItem: document.getElementById('f-custom-item').value, batt: document.getElementById('f-batt').value
+                };
+                db.logs.unshift(entry);
+                const mod = (currentMode === 'sell' ? -1 : 1);
+                if(db.stock[carName] !== undefined) db.stock[carName] += mod;
+                ps.forEach(p => { if(p && db.stock[p] !== undefined) db.stock[p] += mod; });
+                localStorage.setItem(KEY, JSON.stringify(db));
+            }
+            render(); resetForm(); alert(`成功儲存 ${qty} 筆紀錄`);
         }
 
-        function renderLogs() {
-            const container = document.getElementById('log-container');
-            container.innerHTML = records.slice(-5).reverse().map(r => `
-                <div class="p-4 border-b flex justify-between">
-                    <div>
-                        <div class="font-black">${r.barcode} (${r.mode === 'sell' ? '銷' : '進'})</div>
-                        <div class="text-sm text-slate-500">${r.date} - ${r.car} / ${r.color}</div>
-                    </div>
-                    <div class="text-right font-bold text-indigo-600">
-                        $${r.cash + r.bank}
-                    </div>
+        function resetForm() {
+            document.getElementById('main-form').reset();
+            document.getElementById('f-date').valueAsDate = new Date();
+            document.getElementById('f-qty').value = "1";
+            document.getElementById('f-barcode').classList.remove('bg-green-50');
+            if(currentMode === 'buy') document.getElementById('f-barcode').value = "";
+        }
+
+        function switchTab(t) {
+            document.getElementById('page-main').style.display = t==='main'?'block':'none';
+            document.getElementById('page-report').style.display = t==='report'?'block':'none';
+            document.getElementById('tab-main').className = (t==='main'?'tab-active ':'text-slate-500 ') + 'px-8 py-2 rounded-xl font-black';
+            document.getElementById('tab-report').className = (t==='report'?'tab-active ':'text-slate-500 ') + 'px-8 py-2 rounded-xl font-black';
+            if(t==='report') renderFinance();
+        }
+
+        function setMode(m) {
+            currentMode = m;
+            document.getElementById('m-sell').className = (m==='sell'?'bg-white text-indigo-600 shadow-sm ':'text-slate-400 ') + 'flex-1 py-4 rounded-xl font-black';
+            document.getElementById('m-buy').className = (m==='buy'?'bg-white text-orange-600 shadow-sm ':'text-slate-400 ') + 'flex-1 py-4 rounded-xl font-black';
+            document.getElementById('buy-qty-area').classList.toggle('hidden', m!=='buy');
+            resetForm(); 
+        }
+
+        function render() {
+            document.getElementById('stk-grid').innerHTML = Object.entries(db.stock).map(([k,v]) => `<div class="bg-white p-4 rounded-2xl border text-center shadow-sm"><div class="text-[10px] font-black text-slate-300 truncate mb-1">${k}</div><div class="text-xl font-black ${v<=0?'text-slate-200':'text-indigo-600'}">${v}</div></div>`).join('');
+            document.getElementById('log-list').innerHTML = db.logs.map((l, idx) => `
+                <tr class="${l.void?'void-line':''}">
+                    <td class="p-6">
+                        <div class="text-[10px] text-slate-400 font-black mb-1">${l.date}</div>
+                        <div class="log-title font-mono uppercase">${l.barcode}</div>
+                    </td>
+                    <td class="p-6">
+                        <div class="log-title">${l.carName}</div>
+                        <div class="log-detail">${l.ps.filter(x=>x).join(' + ')} ${l.customItem?`★${l.customItem}`:''}</div>
+                        <div class="text-[10px] font-bold text-slate-400 mt-1 uppercase font-mono">${l.vin||'無'} / ${l.motor||'無'}</div>
+                    </td>
+                    <td class="p-6 text-right font-black text-2xl ${l.type==='buy'?'text-orange-500':'text-slate-950'}">${l.type==='buy'?'-':''}$${(l.cash+l.bank).toLocaleString()}</td>
+                    <td class="p-6 text-center"><button onclick="askUndo(${idx})" class="text-slate-300 text-3xl">×</button></td>
+                </tr>`).join('');
+            localStorage.setItem(KEY, JSON.stringify(db));
+        }
+
+        function askUndo(idx) {
+            if(confirm("確定刪除此紀錄？")) {
+                const l = db.logs[idx];
+                const mod = (l.type === 'sell' ? 1 : -1);
+                if(db.stock[l.carName] !== undefined) db.stock[l.carName] += mod;
+                l.ps.forEach(p => { if(p && db.stock[p] !== undefined) db.stock[p] += mod; });
+                l.void = true;
+                render();
+            }
+        }
+
+        // --- 報表與提領邏輯 ---
+        function addWithdraw() {
+            const amt = parseInt(document.getElementById('f-withdraw').value);
+            if(!amt || amt <= 0) return alert("請輸入正確金額");
+            db.withdraws.unshift({ date: new Date().toLocaleDateString(), amount: amt });
+            document.getElementById('f-withdraw').value = "";
+            renderFinance();
+            localStorage.setItem(KEY, JSON.stringify(db));
+        }
+
+        function delWithdraw(idx) {
+            if(confirm("確定刪除此提領紀錄？")) {
+                db.withdraws.splice(idx, 1);
+                renderFinance();
+                localStorage.setItem(KEY, JSON.stringify(db));
+            }
+        }
+
+        function renderFinance() {
+            let totalProfit = 0, stockCost = 0;
+            const activeLogs = db.logs.filter(l => !l.void && l.type === 'sell');
+            Object.entries(db.stock).forEach(([n, q]) => { if(q>0) stockCost += (q * (COST_MAP[n]||0)); });
+            
+            // 計算提領
+            const totalWithdrawn = db.withdraws.reduce((sum, w) => sum + w.amount, 0);
+
+            let html = `<table class="w-full text-left"><thead><tr class="text-slate-400 text-sm border-b"><th class="pb-4">條碼/日期</th><th class="pb-4">項目</th><th class="pb-4 text-right">成本</th><th class="pb-4 text-right">實收</th><th class="pb-4 text-right">利潤</th></tr></thead><tbody>`;
+            activeLogs.forEach(l => {
+                const income = (l.cash + l.bank);
+                const profit = income - l.baseCost;
+                totalProfit += profit;
+                html += `<tr class="border-b border-slate-50"><td class="py-4 font-mono font-black text-xs text-indigo-600 uppercase">${l.barcode}<br><span class="text-slate-300">${l.date}</span></td><td class="py-4 font-bold text-sm">${l.carName}</td><td class="text-right text-slate-300 text-sm">$${l.baseCost.toLocaleString()}</td><td class="text-right font-black">$${income.toLocaleString()}</td><td class="text-right font-black ${profit<0?'text-red-500':'text-emerald-600'}">$${profit.toLocaleString()}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+            document.getElementById('profit-table-area').innerHTML = html;
+
+            // 提領列表
+            document.getElementById('withdraw-list').innerHTML = db.withdraws.map((w, i) => `
+                <div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700">
+                    <div><span class="text-[10px] block opacity-50">${w.date}</span><span class="font-black">$${w.amount.toLocaleString()}</span></div>
+                    <button onclick="delWithdraw(${i})" class="text-red-400 font-bold">刪除</button>
                 </div>
             `).join('');
+
+            // 核心公式：
+            // [可提利潤] = 總利潤 - 配置庫存剩餘 (10萬 - 目前在庫)
+            const reserveNeeded = Math.max(0, 100000 - stockCost);
+            const canWithdrawTotal = totalProfit - reserveNeeded;
+            const remainingWithdraw = canWithdrawTotal - totalWithdrawn;
+
+            document.getElementById('fin-assets').innerHTML = `
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100"><div class="text-xs font-black text-slate-400 mb-1">銷售總利潤</div><div class="text-2xl font-black text-slate-900">$${totalProfit.toLocaleString()}</div></div>
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100"><div class="text-xs font-black text-indigo-400 mb-1">可提利潤 (扣除預留)</div><div class="text-2xl font-black text-indigo-600">$${canWithdrawTotal.toLocaleString()}</div></div>
+                <div class="bg-slate-200 p-6 rounded-[2rem] shadow-sm"><div class="text-xs font-black text-slate-500 mb-1">已提利潤</div><div class="text-2xl font-black text-slate-700">$${totalWithdrawn.toLocaleString()}</div></div>
+                <div class="${remainingWithdraw < 0 ? 'bg-red-500' : 'bg-emerald-500'} p-6 rounded-[2rem] text-white shadow-xl flex flex-col justify-center">
+                    <div class="text-xs font-black opacity-80 mb-1">剩餘利潤 (餘額)</div>
+                    <div class="text-3xl font-black">$${remainingWithdraw.toLocaleString()}</div>
+                </div>`;
         }
 
-        function exportData() {
-            const blob = new Blob([JSON.stringify(records, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `yuchill_backup_${new Date().toISOString().slice(0,10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        function renderReport() {
-            const total = records.reduce((sum, r) => sum + (r.cash + r.bank), 0);
-            document.getElementById('report-content').innerHTML = `
-                <div class="text-4xl font-black text-indigo-600">$${total.toLocaleString()}</div>
-                <div class="mt-2 text-slate-400">總計交易次數：${records.length} 次</div>
-            `;
-        }
-
-        // 初始載入
-        renderLogs();
+        function exportData() { const blob = new Blob([JSON.stringify(db, null, 2)], {type: "application/json"}); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `YUCHILL_V71.json`; a.click(); }
+        
+        document.getElementById('f-date').valueAsDate = new Date();
+        render();
     </script>
+    <script>
+/* ========= 全域狀態 ========= */
+let currentMode = 'sell';
+
+/* ========= 分頁切換 ========= */
+function switchTab(tab) {
+    document.getElementById('page-main').classList.add('hidden');
+    document.getElementById('page-report').classList.add('hidden');
+
+    document.getElementById('tab-main').classList.remove('tab-active');
+    document.getElementById('tab-report').classList.remove('tab-active');
+
+    document.getElementById(`page-${tab}`).classList.remove('hidden');
+    document.getElementById(`tab-${tab}`).classList.add('tab-active');
+}
+
+/* ========= 買 / 賣 模式 ========= */
+function setMode(mode) {
+    currentMode = mode;
+
+    document.getElementById('m-sell').classList.remove('bg-white','shadow-sm','text-indigo-600');
+    document.getElementById('m-buy').classList.remove('bg-white','shadow-sm','text-orange-600');
+
+    if (mode === 'sell') {
+        document.getElementById('m-sell').classList.add('bg-white','shadow-sm','text-indigo-600');
+        document.getElementById('buy-qty-area').classList.add('hidden');
+    } else {
+        document.getElementById('m-buy').classList.add('bg-white','shadow-sm','text-orange-600');
+        document.getElementById('buy-qty-area').classList.remove('hidden');
+    }
+}
+
+/* ========= 條碼 ========= */
+function generateNextBarcode() {
+    const date = document.getElementById('f-date').value || new Date().toISOString().slice(0,10);
+    const code = 'YC-' + date.replaceAll('-','') + '-' + Math.floor(Math.random()*900+100);
+    document.getElementById('f-barcode').value = code;
+}
+
+function autoRefreshBarcode() {
+    if (!document.getElementById('f-barcode').value) {
+        generateNextBarcode();
+    }
+}
+
+function handleBarcodeInput(val) {
+    // 目前保留，之後你可以加掃碼邏輯
+}
+
+/* ========= 表單 ========= */
+function resetForm() {
+    document.getElementById('main-form').reset();
+    setMode('sell');
+}
+
+function doSave() {
+    alert('✅ 已儲存（目前示範版）');
+}
+
+/* ========= 匯出 ========= */
+function exportData() {
+    alert('📦 匯出功能待接資料結構');
+}
+
+/* ========= 預設初始化 ========= */
+document.addEventListener('DOMContentLoaded', () => {
+    setMode('sell');
+});
+</script>
 </body>
 </html>
