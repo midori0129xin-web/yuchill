@@ -3,187 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YUCHILL v77 Pro</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>YUCHILL v72 iPad</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; -webkit-tap-highlight-color: transparent; }
         .tab-active { background: #4f46e5 !important; color: white !important; }
-        .profit-card { border-left: 10px solid #10b981; }
-        input { font-weight: 800; }
+        input, select, textarea { font-size: 16px !important; border: 1px solid #cbd5e1 !important; font-weight: 800; }
+        /* 解決 iOS 點擊反應慢的問題 */
+        button, [onclick] { cursor: pointer; touch-action: manipulation; }
     </style>
 </head>
 <body class="pb-20">
 
-    <nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
+    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600 text-sm">v77</span></h1>
+            <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600 text-sm">v72 iPad</span></h1>
             <div class="flex bg-slate-200 rounded-2xl p-1">
-                <button onclick="switchTab('main')" id="tab-main" class="tab-active px-6 py-2 rounded-xl font-black transition-all">業務輸入</button>
-                <button onclick="switchTab('report')" id="tab-report" class="px-6 py-2 rounded-xl font-black text-slate-500 transition-all">利潤報表</button>
+                <button onclick="switchTab('main')" id="tab-main" class="tab-active px-6 py-2 rounded-xl font-black">業務</button>
+                <button onclick="switchTab('report')" id="tab-report" class="px-6 py-2 rounded-xl font-black text-slate-500">報表</button>
             </div>
+            <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm active:scale-95">備份</button>
         </div>
     </nav>
 
-    <div class="max-w-4xl mx-auto p-4 md:p-8">
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
         <div id="page-main">
-            <div class="bg-white p-6 rounded-[2.5rem] shadow-xl space-y-5">
-                <div class="flex bg-slate-100 rounded-2xl p-1 font-black">
-                    <button type="button" onclick="setMode('sell')" id="m-sell" class="flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600">銷售/出貨</button>
-                    <button type="button" onclick="setMode('buy')" id="m-buy" class="flex-1 py-4 rounded-xl text-slate-400">進貨/支出</button>
-                    <button type="button" onclick="setMode('withdraw')" id="m-withdraw" class="flex-1 py-4 rounded-xl text-slate-400">「已提」登記</button>
-                </div>
-
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="date" id="f-date" class="p-4 rounded-2xl bg-slate-50 border h-14">
-                        <input type="text" id="f-barcode" placeholder="編號/條碼" class="p-4 rounded-2xl bg-slate-50 border h-14 text-center">
-                    </div>
-
-                    <div id="trade-fields" class="space-y-4">
-                        <div class="grid grid-cols-2 gap-2">
-                            <select id="f-car" class="p-4 rounded-xl bg-white border h-14 font-black">
-                                <option value="一般商品">一般商品</option><option>J寄賣款</option><option>G青春版</option><option>Q特惠版</option><option>W高配版</option><option>維修服務</option>
-                            </select>
-                            <input type="number" id="f-extra" placeholder="銷售額外成本" class="p-4 rounded-xl bg-red-50 text-red-600 border h-14">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-5">
+                    <form id="main-form" class="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl border border-white space-y-6">
+                        <div class="flex bg-slate-100 rounded-2xl p-1 font-black">
+                            <button type="button" onclick="setMode('sell')" id="m-sell" class="flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600">銷售</button>
+                            <button type="button" onclick="setMode('buy')" id="m-buy" class="flex-1 py-4 rounded-xl text-slate-400">進貨</button>
                         </div>
-                    </div>
+                        
+                        <div class="flex gap-4">
+                            <div class="flex-1">
+                                <label class="text-xs font-black text-slate-400 ml-1">交易日期</label>
+                                <input type="date" id="f-date" class="w-full p-4 rounded-2xl bg-slate-50 border outline-none h-14">
+                            </div>
+                            <div id="buy-qty-area" class="hidden w-32">
+                                <label class="text-xs font-black text-orange-500 ml-1">進貨數量</label>
+                                <input type="number" id="f-qty" value="1" min="1" inputmode="numeric" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 text-center border h-14">
+                            </div>
+                        </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="number" id="f-cash" placeholder="💰 現金/金額" class="p-5 rounded-2xl bg-amber-50 font-black text-amber-800 border h-16">
-                        <input type="number" id="f-bank" placeholder="🏦 轉帳" class="p-5 rounded-2xl bg-blue-50 font-black text-blue-800 border h-16">
-                    </div>
-                    
-                    <input type="text" id="f-cust" placeholder="備註訊息 (如：已提領給予某某)" class="w-full p-4 rounded-2xl bg-white border h-14">
+                        <div class="p-5 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
+                            <input type="text" id="f-barcode" placeholder="輸入條碼" class="w-full p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border h-14">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select id="f-car-type" class="p-4 rounded-xl font-black bg-white border h-14">
+                                    <option value="">- 車組 -</option>
+                                    <option value="J">J寄賣款</option>
+                                    <option value="G">G青春版</option>
+                                    <option value="W">W高配版</option>
+                                </select>
+                                <select id="f-color" class="p-4 rounded-xl font-black bg-white border h-14">
+                                    <option value="">- 顏色 -</option>
+                                    <option value="黑">黑</option><option value="白">白</option><option value="粉">粉</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="number" id="f-cash" placeholder="現金收" inputmode="decimal" class="p-5 rounded-2xl bg-amber-50 font-black text-amber-800 text-center border h-16">
+                            <input type="number" id="f-bank" placeholder="轉帳收" inputmode="decimal" class="p-5 rounded-2xl bg-blue-50 font-black text-blue-800 text-center border h-16">
+                        </div>
+
+                        <div class="flex gap-3 pt-2">
+                            <button type="button" onclick="resetForm()" class="px-6 py-6 rounded-3xl font-black bg-slate-200 text-slate-600">重置</button>
+                            <button type="button" onclick="doSave()" class="flex-1 py-6 rounded-3xl font-black text-2xl bg-slate-900 text-white shadow-xl active:scale-95">儲存紀錄</button>
+                        </div>
+                    </form>
                 </div>
-
-                <button type="button" onclick="doSave()" class="w-full py-6 rounded-3xl font-black text-2xl bg-slate-900 text-white shadow-xl active:scale-95 transition-transform">儲存紀錄</button>
+                
+                <div class="lg:col-span-7">
+                    <div id="stk-grid" class="bg-white p-6 rounded-[2.5rem] shadow-sm min-h-[200px]">
+                        <h3 class="font-black mb-4">近期紀錄</h3>
+                        <div id="log-container" class="space-y-2"></div>
+                    </div>
+                </div>
             </div>
-            
-            <div id="log-container" class="mt-8 space-y-3"></div>
         </div>
 
-        <div id="page-report" class="hidden space-y-6">
-            <div class="bg-indigo-900 p-8 rounded-[2.5rem] text-white shadow-2xl">
-                <div class="flex justify-between items-center mb-6">
-                    <span class="text-indigo-200 font-bold">剩餘可提利潤 (結餘)</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs">門檻 100,000</span>
-                </div>
-                <div id="r-rem-profit" class="text-5xl font-black mb-2">$0</div>
-                <div class="h-2 bg-indigo-800 rounded-full overflow-hidden">
-                    <div id="r-progress" class="h-full bg-green-400 w-0"></div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white p-6 rounded-3xl shadow-sm border-b-4 border-emerald-500">
-                    <div class="text-xs text-slate-400 font-bold">銷售利潤 (毛利)</div>
-                    <div id="r-sales-profit" class="text-xl font-black text-slate-800">$0</div>
-                </div>
-                <div id="withdraw-card" class="bg-white p-6 rounded-3xl shadow-sm border-b-4 border-orange-500">
-                    <div class="text-xs text-slate-400 font-bold">累積已提領</div>
-                    <div id="r-withdrawn" class="text-xl font-black text-orange-600">$0</div>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm">
-                <h3 class="font-black mb-4">帳務拆解</h3>
-                <div class="space-y-3 text-sm" id="r-detail"></div>
+        <div id="page-report" class="hidden">
+            <div class="bg-white p-8 rounded-[2.5rem] shadow-xl">
+                <h2 class="text-2xl font-black mb-6">業務報表</h2>
+                <div id="report-content" class="text-slate-500">尚無資料</div>
             </div>
         </div>
     </div>
 
     <script>
-        let records = JSON.parse(localStorage.getItem('yuchill_v77_data') || '[]');
+        // 初始化與基礎變數
+        let records = JSON.parse(localStorage.getItem('yuchill_data') || '[]');
         let currentMode = 'sell';
-        const THRESHOLD = 100000; // 配額預算 + 庫存成本
 
+        // 設定今日日期
         document.getElementById('f-date').valueAsDate = new Date();
 
         function switchTab(tab) {
             document.getElementById('page-main').classList.toggle('hidden', tab !== 'main');
             document.getElementById('page-report').classList.toggle('hidden', tab !== 'report');
+            document.getElementById('tab-main').className = tab === 'main' ? 'tab-active px-6 py-2 rounded-xl font-black' : 'px-6 py-2 rounded-xl font-black text-slate-500';
+            document.getElementById('tab-report').className = tab === 'report' ? 'tab-active px-6 py-2 rounded-xl font-black' : 'px-6 py-2 rounded-xl font-black text-slate-500';
             if(tab === 'report') renderReport();
         }
 
         function setMode(mode) {
             currentMode = mode;
-            const btns = ['m-sell', 'm-buy', 'm-withdraw'];
-            btns.forEach(id => {
-                document.getElementById(id).className = id === 'm-' + mode ? 'flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600' : 'flex-1 py-4 rounded-xl text-slate-400';
-            });
-            document.getElementById('trade-fields').classList.toggle('hidden', mode === 'withdraw');
+            document.getElementById('m-sell').className = mode === 'sell' ? 'flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600' : 'flex-1 py-4 rounded-xl text-slate-400';
+            document.getElementById('m-buy').className = mode === 'buy' ? 'flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600' : 'flex-1 py-4 rounded-xl text-slate-400';
+            document.getElementById('buy-qty-area').classList.toggle('hidden', mode !== 'buy');
         }
 
         function doSave() {
             const data = {
                 date: document.getElementById('f-date').value,
                 mode: currentMode,
-                barcode: document.getElementById('f-barcode').value || 'N/A',
-                car: document.getElementById('f-car').value,
-                extra: Number(document.getElementById('f-extra').value) || 0,
+                barcode: document.getElementById('f-barcode').value.toUpperCase(),
+                car: document.getElementById('f-car-type').value,
+                color: document.getElementById('f-color').value,
                 cash: Number(document.getElementById('f-cash').value) || 0,
                 bank: Number(document.getElementById('f-bank').value) || 0,
-                cust: document.getElementById('f-cust').value,
-                ts: Date.now()
+                timestamp: new Date().getTime()
             };
+
+            if(!data.barcode) { alert('請輸入條碼'); return; }
+
             records.push(data);
-            localStorage.setItem('yuchill_v77_data', JSON.stringify(records));
-            alert('紀錄成功！');
-            resetForm();
-            renderLogs();
+            try {
+                localStorage.setItem('yuchill_data', JSON.stringify(records));
+                alert('✅ 儲存成功！');
+                resetForm();
+                renderLogs();
+            } catch (e) {
+                alert('儲存失敗，可能是空間滿了或無痕模式限制');
+            }
         }
 
         function resetForm() {
-            ['f-extra', 'f-cash', 'f-bank', 'f-cust'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('f-barcode').value = '';
+            document.getElementById('f-cash').value = '';
+            document.getElementById('f-bank').value = '';
         }
 
         function renderLogs() {
             const container = document.getElementById('log-container');
-            container.innerHTML = records.slice(-10).reverse().map((r, i) => `
-                <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border-l-4 ${r.mode==='sell'?'border-green-500': r.mode==='buy'?'border-red-500':'border-orange-500'}">
+            container.innerHTML = records.slice(-5).reverse().map(r => `
+                <div class="p-4 border-b flex justify-between">
                     <div>
-                        <div class="font-black text-sm">${r.date} | ${r.mode==='sell'?'銷售':r.mode==='buy'?'進貨':'已提'}</div>
-                        <div class="text-xs text-slate-500">${r.car} ${r.cust ? '('+r.cust+')' : ''}</div>
+                        <div class="font-black">${r.barcode} (${r.mode === 'sell' ? '銷' : '進'})</div>
+                        <div class="text-sm text-slate-500">${r.date} - ${r.car} / ${r.color}</div>
                     </div>
-                    <div class="text-right font-black">$${(r.cash + r.bank).toLocaleString()}</div>
+                    <div class="text-right font-bold text-indigo-600">
+                        $${r.cash + r.bank}
+                    </div>
                 </div>
             `).join('');
         }
 
+        function exportData() {
+            const blob = new Blob([JSON.stringify(records, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `yuchill_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         function renderReport() {
-            const sellIn = records.filter(r => r.mode === 'sell').reduce((a, b) => a + (b.cash + b.bank), 0);
-            const extraCost = records.filter(r => r.mode === 'sell').reduce((a, b) => a + b.extra, 0);
-            const buyOut = records.filter(r => r.mode === 'buy').reduce((a, b) => a + (b.cash + b.bank), 0);
-            const withdrawn = records.filter(r => r.mode === 'withdraw').reduce((a, b) => a + (b.cash + b.bank), 0);
-
-            // 1. 銷售利潤 = 銷售金額 - 進貨成本 - 銷售過程產生的額外成本
-            const salesProfit = sellIn - buyOut - extraCost;
-            
-            // 2. 可提利潤 = 銷售利潤 - 100,000 (配額預算+庫存成本)
-            const earnable = salesProfit - THRESHOLD;
-            
-            // 3. 剩餘利潤 = 可提利潤 - 已提
-            const remaining = earnable - withdrawn;
-
-            document.getElementById('r-rem-profit').innerText = `$${remaining.toLocaleString()}`;
-            document.getElementById('r-sales-profit').innerText = `$${salesProfit.toLocaleString()}`;
-            document.getElementById('r-withdrawn').innerText = `$${withdrawn.toLocaleString()}`;
-            
-            const progress = Math.min(100, Math.max(0, (salesProfit / THRESHOLD) * 100));
-            document.getElementById('r-progress').style.width = progress + '%';
-
-            document.getElementById('r-detail').innerHTML = `
-                <div class="flex justify-between"><span>銷售總收：</span><span class="text-green-600 font-bold">$${sellIn.toLocaleString()}</span></div>
-                <div class="flex justify-between"><span>進貨總支：</span><span class="text-red-500">-$${buyOut.toLocaleString()}</span></div>
-                <div class="flex justify-between"><span>銷售額外成本：</span><span class="text-red-500">-$${extraCost.toLocaleString()}</span></div>
-                <div class="border-t pt-2 mt-2 font-black flex justify-between"><span>銷售利潤：</span><span>$${salesProfit.toLocaleString()}</span></div>
-                <div class="flex justify-between text-indigo-600"><span>減：固定門檻(10萬)：</span><span>-$${THRESHOLD.toLocaleString()}</span></div>
-                <div class="border-t pt-2 mt-2 font-black flex justify-between text-lg"><span>可提利潤總額：</span><span>$${earnable.toLocaleString()}</span></div>
-                <div class="flex justify-between text-orange-600"><span>減：累計已提領：</span><span>-$${withdrawn.toLocaleString()}</span></div>
+            const total = records.reduce((sum, r) => sum + (r.cash + r.bank), 0);
+            document.getElementById('report-content').innerHTML = `
+                <div class="text-4xl font-black text-indigo-600">$${total.toLocaleString()}</div>
+                <div class="mt-2 text-slate-400">總計交易次數：${records.length} 次</div>
             `;
         }
 
+        // 初始載入
         renderLogs();
     </script>
 </body>
