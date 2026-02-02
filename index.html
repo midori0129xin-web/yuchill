@@ -2,118 +2,128 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>YUCHILL v72</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; -webkit-tap-highlight-color: transparent; }
         .tab-active { background: #4f46e5 !important; color: white !important; }
         .void-line { text-decoration: line-through; opacity: 0.15; filter: grayscale(1); pointer-events: none; }
-        input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
+        /* iPad 優化：確保字體至少 16px 防止縮放 */
+        input, select, textarea { font-size: 16px !important; border: 1px solid #cbd5e1 !important; font-weight: 800; }
         .log-title { font-weight: 900; font-size: 16px; }
         .log-detail { font-weight: 800; font-size: 14px; line-height: 1.6; color: #334155; }
+        /* 滾動條美化 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="pb-10">
+<body class="pb-20">
 
-    <nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600">v71</span></h1>
+    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600 text-sm">v72 iPad</span></h1>
             <div class="flex bg-slate-200 rounded-2xl p-1">
-                <button onclick="switchTab('main')" id="tab-main" class="tab-active px-8 py-2 rounded-xl font-black">業務處理</button>
-                <button onclick="switchTab('report')" id="tab-report" class="px-8 py-2 rounded-xl font-black text-slate-500">利潤報表</button>
+                <button onclick="switchTab('main')" id="tab-main" class="tab-active px-6 py-2 rounded-xl font-black transition-all">業務</button>
+                <button onclick="switchTab('report')" id="tab-report" class="px-6 py-2 rounded-xl font-black text-slate-500 transition-all">報表</button>
             </div>
-            <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm">備份資料</button>
+            <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm active:scale-95 transition-transform">備份</button>
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto p-4 mt-6">
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
         <div id="page-main">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div class="lg:col-span-5">
-                    <form id="main-form" class="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-white space-y-6">
+                    <form id="main-form" class="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl border border-white space-y-6">
                         <div class="flex bg-slate-100 rounded-2xl p-1 font-black">
-                            <button type="button" onclick="setMode('sell')" id="m-sell" class="flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600">銷售 / 服務</button>
-                            <button type="button" onclick="setMode('buy')" id="m-buy" class="flex-1 py-4 rounded-xl text-slate-400">採購 / 進貨</button>
+                            <button type="button" onclick="setMode('sell')" id="m-sell" class="flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600">銷售</button>
+                            <button type="button" onclick="setMode('buy')" id="m-buy" class="flex-1 py-4 rounded-xl text-slate-400">進貨</button>
                         </div>
+                        
                         <div class="flex gap-4">
                             <div class="flex-1">
                                 <label class="text-xs font-black text-slate-400 ml-1">交易日期</label>
-                                <input type="date" id="f-date" onchange="autoRefreshBarcode()" class="w-full p-4 rounded-2xl bg-slate-50 border outline-none">
+                                <input type="date" id="f-date" onchange="autoRefreshBarcode()" class="w-full p-4 rounded-2xl bg-slate-50 border outline-none h-14">
                             </div>
                             <div id="buy-qty-area" class="hidden w-32">
                                 <label class="text-xs font-black text-orange-500 ml-1">進貨數量</label>
-                                <input type="number" id="f-qty" value="1" min="1" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 text-center border">
+                                <input type="number" id="f-qty" value="1" min="1" inputmode="numeric" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 text-center border h-14">
                             </div>
                         </div>
-                        <div class="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
+
+                        <div class="p-5 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
                             <div class="flex gap-2">
-                                <input type="text" id="f-barcode" oninput="handleBarcodeInput(this.value)" placeholder="條碼區域" class="flex-1 p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border">
-                                <button type="button" onclick="generateNextBarcode()" class="bg-white px-4 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm">🔄</button>
+                                <input type="text" id="f-barcode" oninput="handleBarcodeInput(this.value)" placeholder="掃描或輸入條碼" class="flex-1 p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border h-14">
+                                <button type="button" onclick="generateNextBarcode()" class="bg-white px-5 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm active:bg-indigo-50">🔄</button>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <select id="f-car-type" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border">
+                                <select id="f-car-type" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border h-14">
                                     <option value="">- 車組 -</option>
                                     <option data-code="J">J寄賣款(8)</option><option data-code="J">J寄賣款/車</option><option data-code="G">G青春版(8)</option>
                                     <option data-code="Q">Q特惠版</option><option data-code="W">W高配版</option><option data-code="Q">Q特惠X防盜</option>
                                     <option data-code="S">維修服務</option>
                                 </select>
-                                <select id="f-color" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border">
+                                <select id="f-color" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border h-14">
                                     <option value="">- 顏色 -</option>
                                     <option value="1">黑</option><option value="2">白</option><option value="3">粉</option><option value="4">藍</option><option value="5">紫</option><option value="6">紅</option>
                                 </select>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <input type="text" id="f-vin" placeholder="車架號" class="p-4 rounded-xl font-bold bg-white text-sm border">
-                                <input type="text" id="f-motor" placeholder="電機號" class="p-4 rounded-xl font-bold bg-white text-sm border">
+                                <input type="text" id="f-vin" placeholder="車架號" class="p-4 rounded-xl font-bold bg-white text-sm border h-14">
+                                <input type="text" id="f-motor" placeholder="電機號" class="p-4 rounded-xl font-bold bg-white text-sm border h-14">
                             </div>
-                            <select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border">
+                            <select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border h-14">
                                 <option value="">- 電池 -</option><option>8AH</option><option>20AH</option><option>30AH</option>
                             </select>
                         </div>
-                        <div class="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-3">
+
+                        <div class="p-5 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-3">
                             <div class="grid grid-cols-2 gap-2">
-                                <select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 1</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-                                <select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 2</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-                                <select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 3</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-                                <select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 4</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
+                                <select class="f-ps p-3 rounded-xl font-bold bg-white border h-12"><option value="">+ 配件 1</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
+                                <select class="f-ps p-3 rounded-xl font-bold bg-white border h-12"><option value="">+ 配件 2</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
+                                <select class="f-ps p-3 rounded-xl font-bold bg-white border h-12"><option value="">+ 配件 3</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
+                                <select class="f-ps p-3 rounded-xl font-bold bg-white border h-12"><option value="">+ 配件 4</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
                             </div>
                             <div class="grid grid-cols-2 gap-2 border-t pt-4">
-                                <input type="text" id="f-custom-item" placeholder="自訂項目" class="p-4 rounded-xl font-bold bg-white text-sm border">
-                                <input type="number" id="f-custom-cost" placeholder="額外成本" class="p-4 rounded-xl font-bold bg-white text-red-600 text-sm border">
+                                <input type="text" id="f-custom-item" placeholder="自訂項目" class="p-4 rounded-xl font-bold bg-white border h-12">
+                                <input type="number" id="f-custom-cost" placeholder="額外成本" inputmode="numeric" class="p-4 rounded-xl font-bold bg-white text-red-600 border h-12">
                             </div>
                         </div>
-                        <input type="text" id="f-cust" placeholder="備註" class="w-full p-5 rounded-2xl bg-white border outline-none font-bold">
+
+                        <input type="text" id="f-cust" placeholder="備註訊息" class="w-full p-4 rounded-2xl bg-white border outline-none font-bold h-14">
+
                         <div class="grid grid-cols-2 gap-4">
-                            <input type="number" id="f-cash" placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border">
-                            <input type="number" id="f-bank" placeholder="🏦 轉帳收" class="p-6 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl border">
+                            <div class="space-y-1">
+                                <label class="text-[10px] font-black text-amber-600 ml-2">💰 現金收</label>
+                                <input type="number" id="f-cash" inputmode="decimal" class="w-full p-5 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border h-16">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] font-black text-blue-600 ml-2">🏦 轉帳收</label>
+                                <input type="number" id="f-bank" inputmode="decimal" class="w-full p-5 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl border h-16">
+                            </div>
                         </div>
-                        <div class="flex gap-3">
-                            <button type="button" onclick="resetForm()" class="px-8 py-6 rounded-3xl font-black bg-slate-200 text-slate-600">重置</button>
-                            <button type="button" onclick="doSave()" class="flex-1 py-6 rounded-3xl font-black text-2xl bg-slate-900 text-white shadow-xl">確認儲存</button>
+
+                        <div class="flex gap-3 pt-2">
+                            <button type="button" onclick="resetForm()" class="px-6 py-6 rounded-3xl font-black bg-slate-200 text-slate-600 active:bg-slate-300">重置</button>
+                            <button type="button" onclick="doSave()" class="flex-1 py-6 rounded-3xl font-black text-2xl bg-slate-900 text-white shadow-xl active:scale-95 transition-transform">儲存紀錄</button>
                         </div>
                     </form>
                 </div>
+
                 <div class="lg:col-span-7 space-y-6">
                     <div id="stk-grid" class="grid grid-cols-3 md:grid-cols-5 gap-3"></div>
-                    <div class="bg-white rounded-[2.5rem] shadow-xl border overflow-hidden">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-50 border-b">
-                                <tr class="text-slate-400 font-black text-xs uppercase"><th class="p-6">摘要</th><th class="p-6">內容</th><th class="p-6 text-right">金額</th><th class="p-6 text-center">刪</th></tr>
-                            </thead>
-                            <tbody id="log-list" class="divide-y divide-slate-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+                    
+                    <div class="bg-white rounded-[2.5rem] shadow-xl border over
 
-        <div id="page-report" class="hidden">
-            <div id="fin-assets" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"></div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div class="lg:col-span-8 bg-white rounded-[2.5rem] shadow-xl border p-8 overflow-x-auto">
-                    <h3 class="font-black text-xl mb-6 flex items-center"><span class="w-2 h-6 bg-indigo-600 rounded-full mr-2"></span>銷售利潤明細</h3>
-                    <div id="profit-table-area"></div>
-                </div>
-                <div class="lg:col-span-4 space-y-
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js');
+}
+</script>
+
+</body>
+</html>
