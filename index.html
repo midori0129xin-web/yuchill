@@ -5,20 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>YUCHILL v72</title>
+    <title>YUCHILL v72 iPad</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; -webkit-tap-highlight-color: transparent; }
         .tab-active { background: #4f46e5 !important; color: white !important; }
-        .void-line { text-decoration: line-through; opacity: 0.15; filter: grayscale(1); pointer-events: none; }
-        /* iPad 優化：確保字體至少 16px 防止縮放 */
         input, select, textarea { font-size: 16px !important; border: 1px solid #cbd5e1 !important; font-weight: 800; }
-        .log-title { font-weight: 900; font-size: 16px; }
-        .log-detail { font-weight: 800; font-size: 14px; line-height: 1.6; color: #334155; }
-        /* 滾動條美化 */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        /* 解決 iOS 點擊反應慢的問題 */
+        button, [onclick] { cursor: pointer; touch-action: manipulation; }
     </style>
 </head>
 <body class="pb-20">
@@ -27,10 +22,10 @@
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600 text-sm">v72 iPad</span></h1>
             <div class="flex bg-slate-200 rounded-2xl p-1">
-                <button onclick="switchTab('main')" id="tab-main" class="tab-active px-6 py-2 rounded-xl font-black transition-all">業務</button>
-                <button onclick="switchTab('report')" id="tab-report" class="px-6 py-2 rounded-xl font-black text-slate-500 transition-all">報表</button>
+                <button onclick="switchTab('main')" id="tab-main" class="tab-active px-6 py-2 rounded-xl font-black">業務</button>
+                <button onclick="switchTab('report')" id="tab-report" class="px-6 py-2 rounded-xl font-black text-slate-500">報表</button>
             </div>
-            <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm active:scale-95 transition-transform">備份</button>
+            <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm active:scale-95">備份</button>
         </div>
     </nav>
 
@@ -47,7 +42,7 @@
                         <div class="flex gap-4">
                             <div class="flex-1">
                                 <label class="text-xs font-black text-slate-400 ml-1">交易日期</label>
-                                <input type="date" id="f-date" onchange="autoRefreshBarcode()" class="w-full p-4 rounded-2xl bg-slate-50 border outline-none h-14">
+                                <input type="date" id="f-date" class="w-full p-4 rounded-2xl bg-slate-50 border outline-none h-14">
                             </div>
                             <div id="buy-qty-area" class="hidden w-32">
                                 <label class="text-xs font-black text-orange-500 ml-1">進貨數量</label>
@@ -56,74 +51,141 @@
                         </div>
 
                         <div class="p-5 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
-                            <div class="flex gap-2">
-                                <input type="text" id="f-barcode" oninput="handleBarcodeInput(this.value)" placeholder="掃描或輸入條碼" class="flex-1 p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border h-14">
-                                <button type="button" onclick="generateNextBarcode()" class="bg-white px-5 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm active:bg-indigo-50">🔄</button>
-                            </div>
+                            <input type="text" id="f-barcode" placeholder="輸入條碼" class="w-full p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border h-14">
                             <div class="grid grid-cols-2 gap-2">
-                                <select id="f-car-type" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border h-14">
+                                <select id="f-car-type" class="p-4 rounded-xl font-black bg-white border h-14">
                                     <option value="">- 車組 -</option>
-                                    <option data-code="J">J寄賣款(8)</option><option data-code="J">J寄賣款/車</option><option data-code="G">G青春版(8)</option>
-                                    <option data-code="Q">Q特惠版</option><option data-code="W">W高配版</option><option data-code="Q">Q特惠X防盜</option>
-                                    <option data-code="S">維修服務</option>
+                                    <option value="J">J寄賣款</option>
+                                    <option value="G">G青春版</option>
+                                    <option value="W">W高配版</option>
                                 </select>
-                                <select id="f-color" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border h-14">
+                                <select id="f-color" class="p-4 rounded-xl font-black bg-white border h-14">
                                     <option value="">- 顏色 -</option>
-                                    <option value="1">黑</option><option value="2">白</option><option value="3">粉</option><option value="4">藍</option><option value="5">紫</option><option value="6">紅</option>
+                                    <option value="黑">黑</option><option value="白">白</option><option value="粉">粉</option>
                                 </select>
                             </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <input type="text" id="f-vin" placeholder="車架號" class="p-4 rounded-xl font-bold bg-white text-sm border h-14">
-                                <input type="text" id="f-motor" placeholder="電機號" class="p-4 rounded-xl font-bold bg-white text-sm border h-14">
-                            </div>
-                            <select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border h-14">
-                                <option value="">- 電池 -</option><option>8AH</option><option>20AH</option><option>30AH</option>
-                            </select>
                         </div>
-
-                        <div class="p-5 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-3">
-                            <div class="grid grid-cols-2 gap-2">
-                                <select class="f-ps p-3 rounded-xl font-bold bg-white border h-12"><option value="">+ 配件 1</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-                                <select class="f-ps p-3 rounded-xl font-bold bg-white border h-12"><option value="">+ 配件 2</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-                                <select class="f-ps p-3 rounded-xl font-bold bg-white border h-12"><option value="">+ 配件 3</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-                                <select class="f-ps p-3 rounded-xl font-bold bg-white border h-12"><option value="">+ 配件 4</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 border-t pt-4">
-                                <input type="text" id="f-custom-item" placeholder="自訂項目" class="p-4 rounded-xl font-bold bg-white border h-12">
-                                <input type="number" id="f-custom-cost" placeholder="額外成本" inputmode="numeric" class="p-4 rounded-xl font-bold bg-white text-red-600 border h-12">
-                            </div>
-                        </div>
-
-                        <input type="text" id="f-cust" placeholder="備註訊息" class="w-full p-4 rounded-2xl bg-white border outline-none font-bold h-14">
 
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1">
-                                <label class="text-[10px] font-black text-amber-600 ml-2">💰 現金收</label>
-                                <input type="number" id="f-cash" inputmode="decimal" class="w-full p-5 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border h-16">
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-[10px] font-black text-blue-600 ml-2">🏦 轉帳收</label>
-                                <input type="number" id="f-bank" inputmode="decimal" class="w-full p-5 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl border h-16">
-                            </div>
+                            <input type="number" id="f-cash" placeholder="現金收" inputmode="decimal" class="p-5 rounded-2xl bg-amber-50 font-black text-amber-800 text-center border h-16">
+                            <input type="number" id="f-bank" placeholder="轉帳收" inputmode="decimal" class="p-5 rounded-2xl bg-blue-50 font-black text-blue-800 text-center border h-16">
                         </div>
 
                         <div class="flex gap-3 pt-2">
-                            <button type="button" onclick="resetForm()" class="px-6 py-6 rounded-3xl font-black bg-slate-200 text-slate-600 active:bg-slate-300">重置</button>
-                            <button type="button" onclick="doSave()" class="flex-1 py-6 rounded-3xl font-black text-2xl bg-slate-900 text-white shadow-xl active:scale-95 transition-transform">儲存紀錄</button>
+                            <button type="button" onclick="resetForm()" class="px-6 py-6 rounded-3xl font-black bg-slate-200 text-slate-600">重置</button>
+                            <button type="button" onclick="doSave()" class="flex-1 py-6 rounded-3xl font-black text-2xl bg-slate-900 text-white shadow-xl active:scale-95">儲存紀錄</button>
                         </div>
                     </form>
                 </div>
+                
+                <div class="lg:col-span-7">
+                    <div id="stk-grid" class="bg-white p-6 rounded-[2.5rem] shadow-sm min-h-[200px]">
+                        <h3 class="font-black mb-4">近期紀錄</h3>
+                        <div id="log-container" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                <div class="lg:col-span-7 space-y-6">
-                    <div id="stk-grid" class="grid grid-cols-3 md:grid-cols-5 gap-3"></div>
-                    
-                    <div class="bg-white rounded-[2.5rem] shadow-xl border over
+        <div id="page-report" class="hidden">
+            <div class="bg-white p-8 rounded-[2.5rem] shadow-xl">
+                <h2 class="text-2xl font-black mb-6">業務報表</h2>
+                <div id="report-content" class="text-slate-500">尚無資料</div>
+            </div>
+        </div>
+    </div>
 
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js');
-}
-</script>
+    <script>
+        // 初始化與基礎變數
+        let records = JSON.parse(localStorage.getItem('yuchill_data') || '[]');
+        let currentMode = 'sell';
 
+        // 設定今日日期
+        document.getElementById('f-date').valueAsDate = new Date();
+
+        function switchTab(tab) {
+            document.getElementById('page-main').classList.toggle('hidden', tab !== 'main');
+            document.getElementById('page-report').classList.toggle('hidden', tab !== 'report');
+            document.getElementById('tab-main').className = tab === 'main' ? 'tab-active px-6 py-2 rounded-xl font-black' : 'px-6 py-2 rounded-xl font-black text-slate-500';
+            document.getElementById('tab-report').className = tab === 'report' ? 'tab-active px-6 py-2 rounded-xl font-black' : 'px-6 py-2 rounded-xl font-black text-slate-500';
+            if(tab === 'report') renderReport();
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('m-sell').className = mode === 'sell' ? 'flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600' : 'flex-1 py-4 rounded-xl text-slate-400';
+            document.getElementById('m-buy').className = mode === 'buy' ? 'flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600' : 'flex-1 py-4 rounded-xl text-slate-400';
+            document.getElementById('buy-qty-area').classList.toggle('hidden', mode !== 'buy');
+        }
+
+        function doSave() {
+            const data = {
+                date: document.getElementById('f-date').value,
+                mode: currentMode,
+                barcode: document.getElementById('f-barcode').value.toUpperCase(),
+                car: document.getElementById('f-car-type').value,
+                color: document.getElementById('f-color').value,
+                cash: Number(document.getElementById('f-cash').value) || 0,
+                bank: Number(document.getElementById('f-bank').value) || 0,
+                timestamp: new Date().getTime()
+            };
+
+            if(!data.barcode) { alert('請輸入條碼'); return; }
+
+            records.push(data);
+            try {
+                localStorage.setItem('yuchill_data', JSON.stringify(records));
+                alert('✅ 儲存成功！');
+                resetForm();
+                renderLogs();
+            } catch (e) {
+                alert('儲存失敗，可能是空間滿了或無痕模式限制');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('f-barcode').value = '';
+            document.getElementById('f-cash').value = '';
+            document.getElementById('f-bank').value = '';
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('log-container');
+            container.innerHTML = records.slice(-5).reverse().map(r => `
+                <div class="p-4 border-b flex justify-between">
+                    <div>
+                        <div class="font-black">${r.barcode} (${r.mode === 'sell' ? '銷' : '進'})</div>
+                        <div class="text-sm text-slate-500">${r.date} - ${r.car} / ${r.color}</div>
+                    </div>
+                    <div class="text-right font-bold text-indigo-600">
+                        $${r.cash + r.bank}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify(records, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `yuchill_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function renderReport() {
+            const total = records.reduce((sum, r) => sum + (r.cash + r.bank), 0);
+            document.getElementById('report-content').innerHTML = `
+                <div class="text-4xl font-black text-indigo-600">$${total.toLocaleString()}</div>
+                <div class="mt-2 text-slate-400">總計交易次數：${records.length} 次</div>
+            `;
+        }
+
+        // 初始載入
+        renderLogs();
+    </script>
 </body>
 </html>
