@@ -206,6 +206,10 @@
                 const mod = (currentMode === 'sell' ? -1 : 1);
                 if(db.stock[carName] !== undefined) db.stock[carName] += mod;
                 ps.forEach(p => { if(p && db.stock[p] !== undefined) db.stock[p] += mod; });
+                 const batt = document.getElementById('f-batt').value;
+if (batt && db.stock[batt] !== undefined) {
+    db.stock[batt] += mod;
+}
                 localStorage.setItem(KEY, JSON.stringify(db));
             }
             render(); resetForm(); alert(`成功儲存 ${qty} 筆紀錄`);
@@ -260,6 +264,9 @@
                 const mod = (l.type === 'sell' ? 1 : -1);
                 if(db.stock[l.carName] !== undefined) db.stock[l.carName] += mod;
                 l.ps.forEach(p => { if(p && db.stock[p] !== undefined) db.stock[p] += mod; });
+                if (l.batt && db.stock[l.batt] !== undefined) {
+    db.stock[l.batt] += mod;
+}
                 l.void = true;
                 render();
             }
