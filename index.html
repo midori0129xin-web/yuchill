@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-        <meta charset="UTF-8" />
-  <style>
-    .same-width-input { width: 100%; max-width: 260px; }
-  </style>
         <link rel="apple-touch-icon" href="icon-512.png?v=71">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,10 +23,13 @@
     <nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto p-3 sm:p-4 mt-3 sm:mt-6">
             <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600">v71</span></h1>
-            <div class="flex bg-slate-200 rounded-2xl p-1">
-                <button onclick="switchTab('main')" id="tab-main" class="tab-active px-8 py-2 rounded-xl font-black">業務處理</button>
-                <button onclick="switchTab('report')" id="tab-report" class="px-8 py-2 rounded-xl font-black text-slate-500">利潤報表</button>
-            </div>
+            <div class="flex w-full bg-slate-200 rounded-2xl p-1">
+    <button onclick="switchTab('main')" id="tab-main" 
+        class="tab-active flex-1 py-4 rounded-xl font-black transition-all">業務處理</button>
+    <button onclick="switchTab('report')" id="tab-report" 
+        class="flex-1 py-4 rounded-xl font-black text-slate-500 transition-all">利潤報表</button>
+</div>
+
             <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm">備份資料</button>
         </div>
     </nav>
@@ -56,11 +55,11 @@
                             </div>
                         </div>
                         <div class="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap gap-2" items-center>
     <input type="text" id="f-barcode"
         oninput="handleBarcodeInput(this.value)"
         placeholder="條碼區域"
-        class="flex-1 p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border">
+        class="flex-1 max-w-[260px] p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border">
 
 
 
@@ -90,7 +89,7 @@
                                     <option value="1">黑</option><option value="2">白</option><option value="3">粉</option><option value="4">藍</option><option value="5">紫</option><option value="6">紅</option>
                                 </select>
                             </div>
-                            <div class="grid grid-cols-2 gap-2">
+                            <div class="grid grid-cols-1 gap-2">
                                 <input type="text" id="f-vin" placeholder="車架號" class="p-4 rounded-xl font-bold bg-white text-sm border">
                                 <input type="text" id="f-motor" placeholder="電機號" class="p-4 rounded-xl font-bold bg-white text-sm border">
                             </div>
@@ -247,12 +246,22 @@ if (batt && db.stock[batt] !== undefined) {
         }
 
         function switchTab(t) {
-            document.getElementById('page-main').style.display = t==='main'?'block':'none';
-            document.getElementById('page-report').style.display = t==='report'?'block':'none';
-            document.getElementById('tab-main').className = (t==='main'?'tab-active ':'text-slate-500 ') + 'px-8 py-2 rounded-xl font-black';
-            document.getElementById('tab-report').className = (t==='report'?'tab-active ':'text-slate-500 ') + 'px-8 py-2 rounded-xl font-black';
-            if(t==='report') renderFinance();
-        }
+    // 1. 切換頁面顯示
+    document.getElementById('page-main').style.display = t === 'main' ? 'block' : 'none';
+    document.getElementById('page-report').style.display = t === 'report' ? 'block' : 'none';
+
+    // 2. 定義樣式：py-4 是加高，flex-1 是平分寬度
+    const base = "flex-1 py-4 rounded-xl font-black transition-all text-center";
+    const active = "tab-active " + base;
+    const inactive = "text-slate-500 " + base;
+
+    // 3. 套用樣式到按鈕
+    document.getElementById('tab-main').className = (t === 'main' ? active : inactive);
+    document.getElementById('tab-report').className = (t === 'report' ? active : inactive);
+
+    // 4. 如果切換到報表頁，執行渲染
+    if (t === 'report') renderFinance();
+}
 
         function setMode(m) {
             currentMode = m;
