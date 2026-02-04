@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YUCHILL v71</title>
 <link rel="apple-touch-icon" href="icon-512.png?v=71">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -10,12 +11,19 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; }
-.tab-active { background: #4f46e5 !important; color: white !important; }
-.void-line { text-decoration: line-through; opacity: 0.15; filter: grayscale(1); pointer-events: none; }
-input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
-.log-title { font-weight: 900; font-size: 16px; }
-.log-detail { font-weight: 800; font-size: 14px; line-height: 1.6; color: #334155; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; }
+    .tab-active { background: #4f46e5 !important; color: white !important; }
+    .void-line { text-decoration: line-through; opacity: 0.15; filter: grayscale(1); pointer-events: none; }
+    input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
+    .log-title { font-weight: 900; font-size: 16px; }
+    .log-detail { font-weight: 800; font-size: 14px; line-height: 1.6; color: #334155; }
+    /* 手機優化條碼區域 */
+    #f-barcode { text-align: center; font-size: 1rem; letter-spacing: 2px; width: 100%; box-sizing: border-box; }
+    @media (max-width: 640px) {
+        #date-qty-wrapper { display: flex; gap: 0.5rem; }
+        #f-date { flex: 2; }
+        #buy-qty-area { flex: 1; }
+    }
 </style>
 </head>
 <body class="pb-10">
@@ -27,39 +35,36 @@ input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
             <button onclick="switchTab('main')" id="tab-main" class="tab-active px-8 py-2 rounded-xl font-black">業務處理</button>
             <button onclick="switchTab('report')" id="tab-report" class="px-8 py-2 rounded-xl font-black text-slate-500">利潤報表</button>
         </div>
-        <div class="flex gap-2">
-            <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm">備份資料</button>
-            <button onclick="syncCloud()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm">同步雲端</button>
-        </div>
+        <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm">備份資料</button>
     </div>
 </nav>
 
 <div class="max-w-7xl mx-auto p-4 mt-6">
+
     <div id="page-main">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div class="lg:col-span-5">
                 <form id="main-form" class="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-white space-y-6">
+
                     <div class="flex bg-slate-100 rounded-2xl p-1 font-black">
                         <button type="button" onclick="setMode('sell')" id="m-sell" class="flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600">銷售 / 服務</button>
-                        <button type="button" onclick="setMode('buy')" id="m-buy" class="flex-1 py-4 rounded-xl text-slate-400">進貨 / 採購</button>
+                        <button type="button" onclick="setMode('buy')" id="m-buy" class="flex-1 py-4 rounded-xl text-slate-400">採購 / 進貨</button>
                     </div>
 
-                    <!-- 日期 + 進貨數量 -->
-                    <div class="flex gap-2">
+                    <div id="date-qty-wrapper" class="flex gap-4">
                         <div class="flex-1">
                             <label class="text-xs font-black text-slate-400 ml-1">交易日期</label>
                             <input type="date" id="f-date" onchange="autoRefreshBarcode()" class="w-full p-4 rounded-2xl bg-slate-50 border outline-none">
                         </div>
-                        <div id="buy-qty-area" class="hidden w-24 flex-shrink-0">
+                        <div id="buy-qty-area" class="w-32 hidden">
                             <label class="text-xs font-black text-orange-500 ml-1">進貨數量</label>
                             <input type="number" id="f-qty" value="1" min="1" inputmode="numeric" pattern="[0-9]*" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 text-center border">
                         </div>
                     </div>
 
-                    <!-- 條碼 -->
                     <div class="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
                         <div class="flex gap-2">
-                            <input type="text" id="f-barcode" oninput="handleBarcodeInput(this.value)" placeholder="條碼區域" class="flex-1 min-w-[120px] max-w-full p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border">
+                            <input type="text" id="f-barcode" oninput="handleBarcodeInput(this.value)" placeholder="條碼區域" class="flex-1 p-4 rounded-xl font-black text-indigo-700 bg-white border" autocomplete="off">
                             <button type="button" onclick="generateNextBarcode()" class="bg-white px-4 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm">🔄</button>
                         </div>
 
@@ -89,6 +94,7 @@ input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
                             <input type="text" id="f-vin" placeholder="車架號" class="p-4 rounded-xl font-bold bg-white text-sm border">
                             <input type="text" id="f-motor" placeholder="電機號" class="p-4 rounded-xl font-bold bg-white text-sm border">
                         </div>
+
                         <select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border">
                             <option value="">- 電池 -</option>
                             <option>8AH</option>
@@ -97,7 +103,7 @@ input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
                         </select>
                     </div>
 
-                    <!-- 配件與自訂項目 -->
+                    <!-- 配件區 -->
                     <div class="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-3">
                         <div class="grid grid-cols-2 gap-2">
                             <select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 1</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
@@ -107,15 +113,15 @@ input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
                         </div>
                         <div class="grid grid-cols-2 gap-2 border-t pt-4">
                             <input type="text" id="f-custom-item" placeholder="自訂項目" class="p-4 rounded-xl font-bold bg-white text-sm border">
-                            <input type="number" id="f-custom-cost" placeholder="額外成本" class="p-4 rounded-xl font-bold bg-white text-red-600 text-sm border" inputmode="numeric" pattern="[0-9]*">
+                            <input type="number" id="f-custom-cost" placeholder="額外成本" class="p-4 rounded-xl font-bold bg-white text-red-600 text-sm border">
                         </div>
                     </div>
 
                     <input type="text" id="f-cust" placeholder="備註" class="w-full p-5 rounded-2xl bg-white border outline-none font-bold">
 
                     <div class="grid grid-cols-2 gap-4">
-                        <input type="number" id="f-cash" placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border" inputmode="numeric" pattern="[0-9]*">
-                        <input type="number" id="f-bank" placeholder="🏦 轉帳收" class="p-6 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl border" inputmode="numeric" pattern="[0-9]*">
+                        <input type="number" id="f-cash" placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border">
+                        <input type="number" id="f-bank" placeholder="🏦 轉帳收" class="p-6 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl border">
                     </div>
 
                     <div class="flex gap-3">
@@ -125,7 +131,6 @@ input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
                 </form>
             </div>
 
-            <!-- 庫存與紀錄區 -->
             <div class="lg:col-span-7 space-y-6">
                 <div id="stk-grid" class="grid grid-cols-3 md:grid-cols-5 gap-3"></div>
                 <div class="bg-white rounded-[2.5rem] shadow-xl border overflow-hidden">
@@ -140,7 +145,6 @@ input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
         </div>
     </div>
 
-    <!-- 報表區 -->
     <div id="page-report" class="hidden">
         <div id="fin-assets" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"></div>
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -152,7 +156,7 @@ input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
                 <div class="bg-slate-900 text-white rounded-[2.5rem] p-8 shadow-2xl">
                     <h3 class="font-black text-xl mb-4">利潤提領紀錄</h3>
                     <div class="space-y-4">
-                        <input type="number" id="f-withdraw" placeholder="輸入提領金額" class="w-full p-4 rounded-xl bg-slate-800 border-none text-white text-2xl font-black" inputmode="numeric" pattern="[0-9]*">
+                        <input type="number" id="f-withdraw" placeholder="輸入提領金額" class="w-full p-4 rounded-xl bg-slate-800 border-none text-white text-2xl font-black">
                         <button onclick="addWithdraw()" class="w-full py-4 rounded-xl bg-indigo-500 font-black hover:bg-indigo-400 transition">確認提領</button>
                     </div>
                     <div id="withdraw-list" class="mt-8 space-y-2 max-h-60 overflow-y-auto"></div>
@@ -163,34 +167,32 @@ input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
 </div>
 
 <script>
-// --- 資料 ---
-const COST_MAP = { "J寄賣款(8)":9000, "J寄賣款/車":7500, "G青春版(8)":5980, "Q特惠版":5000, "W高配版":5335, "Q特惠X防盜":4000, "8AH":0, "20AH":1650, "30AH":1970, "兒童座椅":500, "定時器":90, "水杯架":70, "雙杯手機架":155, "後照鏡2長":75, "後座靠背":100, "後腳踏/塑":80, "後腳踏/鐵":60, "維修服務":0 };
-const KEY = "YUCHILL_DB_V71";
-let db = JSON.parse(localStorage.getItem(KEY)) || { stock:{}, logs:[], withdraws:[] };
-let currentMode = 'sell';
+/* ----------------- JS 完整邏輯，條碼掃描支援 ----------------- */
+const COST_MAP = { "J寄賣款(8)":9000,"J寄賣款/車":7500,"G青春版(8)":5980,"Q特惠版":5000,"W高配版":5335,"Q特惠X防盜":4000,"8AH":0,"20AH":1650,"30AH":1970,"兒童座椅":500,"定時器":90,"水杯架":70,"雙杯手機架":155,"後照鏡2長":75,"後座靠背":100,"後腳踏/塑":80,"後腳踏/鐵":60,"維修服務":0 };
+const KEY="YUCHILL_DB_V71";
+let db=JSON.parse(localStorage.getItem(KEY))||{ stock:{ "J寄賣款(8)":0,"J寄賣款/車":0,"G青春版(8)":0,"Q特惠版":0,"W高配版":0,"Q特惠X防盜":0,"8AH":0,"20AH":0,"30AH":0,"兒童座椅":0,"定時器":0,"水杯架":0,"雙杯手機架":0,"後照鏡2長":0,"後座靠背":0,"後腳踏/塑":0,"後腳踏/鐵":0 }, logs:[], withdraws:[]};
+let currentMode='sell';
 
-// --- 自動生成條碼 ---
 function generateNextBarcode() {
-    const carEl = document.getElementById('f-car-type');
-    const carCode = carEl.options[carEl.selectedIndex]?.dataset.code;
-    const colorCode = document.getElementById('f-color').value || "0";
-    const dateStr = document.getElementById('f-date').value;
-    if(!carCode || !dateStr) return "";
-    const shortDate = dateStr.replace(/-/g,'').substring(2);
-    const matchedLogs = db.logs.filter(l=>!l.void && l.barcode?.startsWith(carCode));
+    const carEl=document.getElementById('f-car-type');
+    const carCode=carEl.options[carEl.selectedIndex]?.dataset.code;
+    const colorCode=document.getElementById('f-color').value||"0";
+    const dateStr=document.getElementById('f-date').value;
+    if(!carCode||!dateStr) return "";
+    const shortDate=dateStr.replace(/-/g,'').substring(2);
+    const matchedLogs=db.logs.filter(l=>!l.void&&l.barcode&&l.barcode.startsWith(carCode)&&/^\d{2}$/.test(l.barcode.slice(-2)));
     let maxNum=0;
     if(matchedLogs.length>0){
-        maxNum = Math.max(...matchedLogs.map(l=>parseInt(l.barcode.slice(-2))));
+        maxNum=Math.max(...matchedLogs.map(l=>parseInt(l.barcode.slice(-2))));
     }
-    const final = `${carCode}${colorCode}${shortDate}${(maxNum+1).toString().padStart(2,'0')}`;
-    document.getElementById('f-barcode').value = final;
+    const final=`${carCode}${colorCode}${shortDate}${(maxNum+1).toString().padStart(2,'0')}`;
+    document.getElementById('f-barcode').value=final;
     return final;
 }
 
-// --- 條碼自動帶資料 ---
-function handleBarcodeInput(val) {
+function handleBarcodeInput(val){
     if(currentMode!=='sell'||val.length<5) return;
-    const target = db.logs.find(l=>!l.void && l.type==='buy' && l.barcode===val.toUpperCase());
+    const target=db.logs.find(l=>!l.void&&l.type==='buy'&&l.barcode===val.toUpperCase());
     if(target){
         document.getElementById('f-car-type').value=target.carName;
         document.getElementById('f-vin').value=target.vin||"";
@@ -203,22 +205,66 @@ function handleBarcodeInput(val) {
 
 function autoRefreshBarcode(){ if(currentMode==='buy') generateNextBarcode(); }
 
-// --- 儲存紀錄 ---
 function doSave(){
-    const dateVal = document.getElementById('f-date').value;
+    const dateVal=document.getElementById('f-date').value;
     if(!dateVal) return alert("請選擇日期");
-    const qty = currentMode==='buy'?(parseInt(document.getElementById('f-qty').value)||1):1;
-    const carName = document.getElementById('f-car-type').value||"維修項目";
-    const ps = Array.from(document.querySelectorAll('.f-ps')).map(s=>s.value);
-
+    const qty=currentMode==='buy'?(parseInt(document.getElementById('f-qty').value)||1):1;
+    const carName=document.getElementById('f-car-type').value||"維修項目";
+    const ps=Array.from(document.querySelectorAll('.f-ps')).map(s=>s.value);
     for(let i=0;i<qty;i++){
         let codeToUse=(currentMode==='buy')?generateNextBarcode():document.getElementById('f-barcode').value;
         if(!codeToUse&&currentMode==='sell') codeToUse="手動銷貨";
+        let baseCost=(COST_MAP[carName]||0)+(COST_MAP[document.getElementById('f-batt').value]||0)+ps.reduce((a,b)=>a+(COST_MAP[b]||0),0)+(parseInt(document.getElementById('f-custom-cost').value)||0);
+        db.logs.push({ type: currentMode, barcode: codeToUse, carName, date:dateVal, vin:document.getElementById('f-vin').value, motor:document.getElementById('f-motor').value, batt:document.getElementById('f-batt').value, color:document.getElementById('f-color').value, ps, custom:document.getElementById('f-custom-item').value, cash:parseInt(document.getElementById('f-cash').value)||0, bank:parseInt(document.getElementById('f-bank').value)||0, void:false, cost:baseCost });
+    }
+    localStorage.setItem(KEY,JSON.stringify(db));
+    resetForm();
+    refreshLog();
+}
 
-        let baseCost=(COST_MAP[carName]||0)+(COST_MAP[document.getElementById('f-batt').value]||0);
-        ps.forEach(p=>{if(p) baseCost+=(COST_MAP[p]||0);});
-        baseCost += (parseInt(document.getElementById('f-custom-cost').value)||0);
+function resetForm(){
+    document.getElementById('main-form').reset();
+    document.getElementById('f-qty').value=1;
+}
 
-        const entry = {
-            date:dateVal, carName, ps:[...ps], barcode:codeToUse,
-            vin:document.getElementById('f-v
+function switchTab(tab){
+    document.getElementById('page-main').classList.toggle('hidden',tab!=='main');
+    document.getElementById('page-report').classList.toggle('hidden',tab!=='report');
+    document.getElementById('tab-main').classList.toggle('tab-active',tab==='main');
+    document.getElementById('tab-report').classList.toggle('tab-active',tab==='report');
+}
+
+function setMode(mode){
+    currentMode=mode;
+    document.getElementById('m-sell').classList.toggle('bg-white',mode!=='sell');
+    document.getElementById('m-sell').classList.toggle('text-indigo-600',mode==='sell');
+    document.getElementById('m-buy').classList.toggle('bg-white',mode!=='buy');
+    document.getElementById('m-buy').classList.toggle('text-slate-400',mode!=='buy');
+    document.getElementById('buy-qty-area').classList.toggle('hidden',mode!=='buy');
+    generateNextBarcode();
+}
+
+function refreshLog(){
+    const listEl=document.getElementById('log-list');
+    listEl.innerHTML='';
+    db.logs.slice().reverse().forEach((l,i)=>{
+        const tr=document.createElement('tr');
+        tr.className=l.void?'void-line':'';
+        tr.innerHTML=`<td class="p-4 font-black">${l.date} ${l.carName}</td>
+                        <td class="p-4 font-bold text-slate-600">${l.barcode}</td>
+                        <td class="p-4 font-black text-right">${l.cash+l.bank}</td>
+                        <td class="p-4 text-center"><button onclick="deleteLog(${db.logs.length-1-i})" class="text-red-500 font-black">❌</button></td>`;
+        listEl.appendChild(tr);
+    });
+}
+
+function deleteLog(idx){ if(confirm("確定刪除？")){ db.logs[idx].void=true; localStorage.setItem(KEY,JSON.stringify(db)); refreshLog(); } }
+
+function exportData(){ const a=document.createElement('a'); a.href='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(db)); a.download='yuchill_backup.json'; a.click(); }
+
+refreshLog();
+generateNextBarcode();
+</script>
+
+</body>
+</html>
