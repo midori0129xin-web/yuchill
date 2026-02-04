@@ -47,7 +47,8 @@
                             </div>
                             <div id="buy-qty-area" class="hidden w-32">
                                 <label class="text-xs font-black text-orange-500 ml-1">進貨數量</label>
-                                <input type="number" id="f-qty" value="1" min="1" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 text-center border">
+                                <input type="number" id="f-qty" value="1" min="1"   inputmode="numeric"
+  pattern="[0-9]*" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 text-center border">
                             </div>
                         </div>
                         <div class="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
@@ -206,6 +207,10 @@
                 const mod = (currentMode === 'sell' ? -1 : 1);
                 if(db.stock[carName] !== undefined) db.stock[carName] += mod;
                 ps.forEach(p => { if(p && db.stock[p] !== undefined) db.stock[p] += mod; });
+                    const batt = document.getElementById('f-batt').value;
+if (batt && db.stock[batt] !== undefined) {
+    db.stock[batt] += mod;
+}
                 localStorage.setItem(KEY, JSON.stringify(db));
             }
             render(); resetForm(); alert(`成功儲存 ${qty} 筆紀錄`);
@@ -260,6 +265,9 @@
                 const mod = (l.type === 'sell' ? 1 : -1);
                 if(db.stock[l.carName] !== undefined) db.stock[l.carName] += mod;
                 l.ps.forEach(p => { if(p && db.stock[p] !== undefined) db.stock[p] += mod; });
+                    if (l.batt && db.stock[l.batt] !== undefined) {
+    db.stock[l.batt] += mod;
+}
                 l.void = true;
                 render();
             }
