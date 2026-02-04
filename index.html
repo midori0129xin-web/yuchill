@@ -21,7 +21,7 @@
 <body class="pb-10">
 
     <nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div class="max-w-7xl mx-auto p-3 sm:p-4 mt-3 sm:mt-6">
             <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600">v71</span></h1>
             <div class="flex bg-slate-200 rounded-2xl p-1">
                 <button onclick="switchTab('main')" id="tab-main" class="tab-active px-8 py-2 rounded-xl font-black">業務處理</button>
@@ -31,7 +31,7 @@
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto p-4 mt-6">
+    <div class="max-w-7xl mx-auto p-3 sm:p-4 mt-3 sm:mt-6">
         <div id="page-main">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div class="lg:col-span-5">
@@ -53,9 +53,24 @@
                         </div>
                         <div class="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
                             <div class="flex gap-2">
-                                <input type="text" id="f-barcode" oninput="handleBarcodeInput(this.value)" placeholder="條碼區域" class="flex-1 p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border">
-                                <button type="button" onclick="generateNextBarcode()" class="bg-white px-4 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm">🔄</button>
-                            </div>
+    <input type="text" id="f-barcode"
+        oninput="handleBarcodeInput(this.value)"
+        placeholder="條碼區域"
+        class="flex-1 max-w-[260px] p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border">
+
+<!-- iOS 拍照掃描用（隱藏） -->
+<input type="file" id="barcodeFileInput" accept="image/*" capture="environment" style="display:none" />
+
+    <button type="button"
+        onclick="generateNextBarcode()"
+        class="bg-white px-4 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm">🔄</button>
+
+    <button type="button"
+        onclick="onclick="handleBarcodeScan()"
+        class="bg-white px-4 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm sm:hidden">
+        📷
+    </button>
+</div>
                             <div class="grid grid-cols-2 gap-2">
                                 <select id="f-car-type" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border">
                                     <option value="">- 車組 -</option>
@@ -85,13 +100,13 @@
                             </div>
                             <div class="grid grid-cols-2 gap-2 border-t pt-4">
                                 <input type="text" id="f-custom-item" placeholder="自訂項目" class="p-4 rounded-xl font-bold bg-white text-sm border">
-                                <input type="number" id="f-custom-cost" placeholder="額外成本" class="p-4 rounded-xl font-bold bg-white text-red-600 text-sm border">
+                                <input type="number" id="f-custom-cost" inputmode="numeric" pattern="[0-9]*"placeholder="額外成本" class="p-4 rounded-xl font-bold bg-white text-red-600 text-sm border">
                             </div>
                         </div>
                         <input type="text" id="f-cust" placeholder="備註" class="w-full p-5 rounded-2xl bg-white border outline-none font-bold">
                         <div class="grid grid-cols-2 gap-4">
-                            <input type="number" id="f-cash" placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border">
-                            <input type="number" id="f-bank" placeholder="🏦 轉帳收" class="p-6 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl border">
+                            <input type="number" id="f-cash" inputmode="numeric" pattern="[0-9]*"placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border">
+                            <input type="number" id="f-bank" inputmode="numeric" pattern="[0-9]*"placeholder="🏦 轉帳收" class="p-6 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl border">
                         </div>
                         <div class="flex gap-3">
                             <button type="button" onclick="resetForm()" class="px-8 py-6 rounded-3xl font-black bg-slate-200 text-slate-600">重置</button>
@@ -337,6 +352,78 @@ if (batt && db.stock[batt] !== undefined) {
         
         document.getElementById('f-date').valueAsDate = new Date();
         render();
-    </script>
+   
+/* ===== 手機條碼掃描（原生 Camera） ===== */
+let barcodeStream = null;
+
+async function startBarcodeScan() {
+    if (!('BarcodeDetector' in window)) {
+        alert('此裝置不支援條碼掃描，請手動輸入');
+        return;
+    }
+
+    try {
+        const detector = new BarcodeDetector({
+            formats: ['code_128', 'ean_13', 'ean_8', 'qr_code']
+        });
+
+        const video = document.createElement('video');
+        video.style.position = 'fixed';
+        video.style.top = '0';
+        video.style.left = '0';
+        video.style.width = '100vw';
+        video.style.height = '100vh';
+        video.style.objectFit = 'cover';
+        video.style.zIndex = '9999';
+        video.style.background = '#000';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.innerText = '✕';
+        closeBtn.style.position = 'fixed';
+        closeBtn.style.top = '20px';
+        closeBtn.style.right = '20px';
+        closeBtn.style.zIndex = '10000';
+        closeBtn.style.fontSize = '28px';
+        closeBtn.style.color = '#fff';
+
+        document.body.append(video, closeBtn);
+
+        barcodeStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+        });
+
+        video.srcObject = barcodeStream;
+        await video.play();
+
+        closeBtn.onclick = () => stopScan(video, closeBtn);
+
+        const scanLoop = async () => {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                const barcodes = await detector.detect(video);
+                if (barcodes.length) {
+                    document.getElementById('f-barcode').value = barcodes[0].rawValue.toUpperCase();
+                    handleBarcodeInput(barcodes[0].rawValue);
+                    stopScan(video, closeBtn);
+                    return;
+                }
+            }
+            requestAnimationFrame(scanLoop);
+        };
+        scanLoop();
+
+    } catch (err) {
+        alert('無法開啟相機');
+    }
+}
+
+function stopScan(video, btn) {
+    if (barcodeStream) {
+        barcodeStream.getTracks().forEach(t => t.stop());
+        barcodeStream = null;
+    }
+    video.remove();
+    btn.remove();
+}
+</script>
 </body>
 </html>
