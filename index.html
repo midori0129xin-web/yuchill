@@ -58,6 +58,8 @@
         placeholder="條碼區域"
         class="flex-1 max-w-[260px] p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border">
 
+
+
 <!-- iOS 拍照掃描用（隱藏） -->
 <input type="file" id="barcodeFileInput" accept="image/*" capture="environment" style="display:none" />
 
@@ -65,8 +67,9 @@
         onclick="generateNextBarcode()"
         class="bg-white px-4 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm">🔄</button>
 
-    <button type="button"
-        onclick="onclick="handleBarcodeScan()"
+<input type="file" id="barcodeFileInput" accept="image/*" capture="environment" style="display:none" />
+
+    <button type="button" onclick="handleBarcodeScan()"
         class="bg-white px-4 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm sm:hidden">
         📷
     </button>
@@ -424,6 +427,51 @@ function stopScan(video, btn) {
     video.remove();
     btn.remove();
 }
+
+// ===== 條碼掃描（補）=====
+async function handleBarcodeScan() {
+    // iPhone / Safari fallback：用拍照
+    if (!('BarcodeDetector' in window)) {
+        document.getElementById('barcodeFileInput').click();
+        return;
+    }
+
+    // Android / Chrome：即時掃描
+    const detector = new BarcodeDetector({
+        formats: ['ean_13','ean_8','code_128','qr_code']
+    });
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+    });
+
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    await video.play();
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const scan = async () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+
+        const codes = await detector.detect(canvas);
+        if (codes.length > 0) {
+            const code = codes[0].rawValue;
+            const input = document.getElementById('f-barcode');
+            input.value = code;
+            input.dispatchEvent(new Event('input'));
+
+            stream.getTracks().forEach(t => t.stop());
+        } else {
+            requestAnimationFrame(scan);
+        }
+    };
+    scan();
+}
+
 </script>
 </body>
 </html>
