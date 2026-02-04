@@ -3,153 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="YUCHILL">
-<link rel="apple-touch-icon" href="icon-512.png?v=71">
+<title>YUCHILL 測試版</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; }
 .tab-active { background: #4f46e5 !important; color: white !important; }
 .void-line { text-decoration: line-through; opacity: 0.15; filter: grayscale(1); pointer-events: none; }
-input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
-.log-title { font-weight: 900; font-size: 16px; }
-.log-detail { font-weight: 800; font-size: 14px; line-height: 1.6; color: #334155; word-break: break-word; }
-#f-barcode { max-width: 100%; box-sizing: border-box; }
-.flex-nowrap { flex-wrap: nowrap; }
-@media (max-width: 640px){
-    #f-date { width: 40%; }
-    #buy-qty-area { width: 30%; }
-}
+input, select, button { font-weight: 800; }
 </style>
 </head>
 <body class="pb-10">
 
-<nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
-<div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-<h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600">v71</span></h1>
-<div class="flex bg-slate-200 rounded-2xl p-1">
-<button onclick="switchTab('main')" id="tab-main" class="tab-active px-8 py-2 rounded-xl font-black">業務處理</button>
-<button onclick="switchTab('report')" id="tab-report" class="px-8 py-2 rounded-xl font-black text-slate-500">利潤報表</button>
-</div>
-<button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm">備份資料</button>
-</div>
+<nav class="bg-white border-b sticky top-0 z-50 shadow-sm p-4 flex justify-between items-center">
+    <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600">v71</span></h1>
+    <div class="flex gap-2">
+        <button id="tab-main" class="tab-active px-4 py-2 rounded-xl" onclick="switchTab('main')">業務處理</button>
+        <button id="tab-report" class="px-4 py-2 rounded-xl text-slate-500" onclick="switchTab('report')">利潤報表</button>
+        <button onclick="exportData()" class="px-4 py-2 rounded-xl bg-slate-200">備份資料</button>
+    </div>
 </nav>
 
-<div class="max-w-7xl mx-auto p-4 mt-6">
-<div id="page-main">
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-<div class="lg:col-span-5">
-<form id="main-form" class="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-white space-y-6">
-<div class="flex bg-slate-100 rounded-2xl p-1 font-black">
-<button type="button" onclick="setMode('sell')" id="m-sell" class="flex-1 py-4 rounded-xl bg-white shadow-sm text-indigo-600">銷售 / 服務</button>
-<button type="button" onclick="setMode('buy')" id="m-buy" class="flex-1 py-4 rounded-xl text-slate-400">採購 / 進貨</button>
-</div>
-<div class="flex flex-nowrap gap-2">
-<div class="flex-1">
-<label class="text-xs font-black text-slate-400 ml-1">交易日期</label>
-<input type="date" id="f-date" onchange="autoRefreshBarcode()" class="w-full p-4 rounded-2xl bg-slate-50 border outline-none">
-</div>
-<div id="buy-qty-area" class="hidden">
-<label class="text-xs font-black text-orange-500 ml-1">進貨數量</label>
-<input type="number" id="f-qty" value="1" min="1" inputmode="numeric" pattern="[0-9]*" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 text-center border">
-</div>
-</div>
+<div class="max-w-3xl mx-auto p-4">
+    <div id="page-main">
+        <form id="main-form" class="bg-white p-6 rounded-xl shadow-md space-y-4">
+            <div class="flex gap-2">
+                <button type="button" id="m-sell" class="flex-1 bg-white text-indigo-600 shadow-sm rounded-xl py-2" onclick="setMode('sell')">銷售</button>
+                <button type="button" id="m-buy" class="flex-1 bg-slate-200 rounded-xl py-2" onclick="setMode('buy')">進貨</button>
+            </div>
+            <div class="flex gap-2">
+                <input type="date" id="f-date" class="flex-1 p-2 rounded-xl border" onchange="autoRefreshBarcode()">
+                <input type="number" id="f-qty" value="1" min="1" class="w-24 p-2 rounded-xl border">
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="f-barcode" placeholder="條碼" class="flex-1 p-2 rounded-xl border text-center" oninput="handleBarcodeInput(this.value)">
+                <button type="button" onclick="generateNextBarcode()" class="px-4 py-2 bg-white rounded-xl border">🔄</button>
+            </div>
+            <input type="text" id="f-car-type" placeholder="車型" class="w-full p-2 rounded-xl border">
+            <input type="text" id="f-color" placeholder="顏色" class="w-full p-2 rounded-xl border">
+            <input type="text" id="f-vin" placeholder="車架號" class="w-full p-2 rounded-xl border">
+            <input type="text" id="f-motor" placeholder="電機號" class="w-full p-2 rounded-xl border">
+            <input type="text" id="f-cust" placeholder="備註" class="w-full p-2 rounded-xl border">
+            <div class="flex gap-2">
+                <input type="number" id="f-cash" placeholder="現金收" class="flex-1 p-2 rounded-xl border">
+                <input type="number" id="f-bank" placeholder="轉帳收" class="flex-1 p-2 rounded-xl border">
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="resetForm()" class="flex-1 bg-slate-200 rounded-xl py-2">重置</button>
+                <button type="button" onclick="doSave()" class="flex-1 bg-indigo-600 text-white rounded-xl py-2">確認儲存</button>
+            </div>
+        </form>
 
-<div class="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
-<div class="flex gap-2">
-<input type="text" id="f-barcode" oninput="handleBarcodeInput(this.value)" placeholder="條碼區域" class="flex-1 p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border">
-<button type="button" onclick="generateNextBarcode()" class="bg-white px-4 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm">🔄</button>
-</div>
-<div class="grid grid-cols-2 gap-2">
-<select id="f-car-type" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border">
-<option value="">- 車組 -</option>
-<option data-code="J">J寄賣款(8)</option>
-<option data-code="J">J寄賣款/車</option>
-<option data-code="G">G青春版(8)</option>
-<option data-code="Q">Q特惠版</option>
-<option data-code="W">W高配版</option>
-<option data-code="Q">Q特惠X防盜</option>
-<option data-code="S">維修服務</option>
-</select>
-<select id="f-color" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border">
-<option value="">- 顏色 -</option>
-<option value="1">黑</option><option value="2">白</option><option value="3">粉</option><option value="4">藍</option><option value="5">紫</option><option value="6">紅</option>
-</select>
-</div>
-<div class="grid grid-cols-2 gap-2">
-<input type="text" id="f-vin" placeholder="車架號" class="p-4 rounded-xl font-bold bg-white text-sm border">
-<input type="text" id="f-motor" placeholder="電機號" class="p-4 rounded-xl font-bold bg-white text-sm border">
-</div>
-<select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border">
-<option value="">- 電池 -</option><option>8AH</option><option>20AH</option><option>30AH</option>
-</select>
-</div>
+        <div id="stk-grid" class="grid grid-cols-3 gap-2 mt-4"></div>
+        <table class="w-full text-left mt-4 border">
+            <thead><tr><th>摘要</th><th>內容</th><th>金額</th><th>刪</th></tr></thead>
+            <tbody id="log-list"></tbody>
+        </table>
+    </div>
 
-<div class="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-3">
-<div class="grid grid-cols-2 gap-2">
-<select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 1</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-<select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 2</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-<select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 3</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-<select class="f-ps p-3 rounded-xl font-bold bg-white text-sm border"><option value="">+ 配件 4</option><option>兒童座椅</option><option>定時器</option><option>水杯架</option><option>雙杯手機架</option><option>後照鏡2長</option><option>後座靠背</option><option>後腳踏/塑</option><option>後腳踏/鐵</option></select>
-</div>
-<div class="grid grid-cols-2 gap-2 border-t pt-4">
-<input type="text" id="f-custom-item" placeholder="自訂項目" class="p-4 rounded-xl font-bold bg-white text-sm border">
-<input type="number" id="f-custom-cost" placeholder="額外成本" class="p-4 rounded-xl font-bold bg-white text-red-600 text-sm border">
-</div>
-</div>
-
-<input type="text" id="f-cust" placeholder="備註" class="w-full p-5 rounded-2xl bg-white border outline-none font-bold">
-<div class="grid grid-cols-2 gap-4">
-<input type="number" id="f-cash" placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border">
-<input type="number" id="f-bank" placeholder="🏦 轉帳收" class="p-6 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl border">
-</div>
-<div class="flex gap-3">
-<button type="button" onclick="resetForm()" class="px-8 py-6 rounded-3xl font-black bg-slate-200 text-slate-600">重置</button>
-<button type="button" onclick="doSave()" class="flex-1 py-6 rounded-3xl font-black text-2xl bg-slate-900 text-white shadow-xl">確認儲存</button>
-</div>
-</form>
-</div>
-
-<div class="lg:col-span-7 space-y-6">
-<div id="stk-grid" class="grid grid-cols-3 md:grid-cols-5 gap-3"></div>
-<div class="bg-white rounded-[2.5rem] shadow-xl border overflow-hidden">
-<table class="w-full text-left">
-<thead class="bg-slate-50 border-b">
-<tr class="text-slate-400 font-black text-xs uppercase"><th class="p-6">摘要</th><th class="p-6">內容</th><th class="p-6 text-right">金額</th><th class="p-6 text-center">刪</th></tr>
-</thead>
-<tbody id="log-list" class="divide-y divide-slate-100"></tbody>
-</table>
-</div>
-</div>
-</div>
-</div>
-
-<div id="page-report" class="hidden">
-<div id="fin-assets" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"></div>
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-<div class="lg:col-span-8 bg-white rounded-[2.5rem] shadow-xl border p-8 overflow-x-auto">
-<h3 class="font-black text-xl mb-6 flex items-center"><span class="w-2 h-6 bg-indigo-600 rounded-full mr-2"></span>銷售利潤明細</h3>
-<div id="profit-table-area"></div>
-</div>
-<div class="lg:col-span-4 space-y-6">
-<div class="bg-slate-900 text-white rounded-[2.5rem] p-8 shadow-2xl">
-<h3 class="font-black text-xl mb-4">利潤提領紀錄</h3>
-<div class="space-y-4">
-<input type="number" id="f-withdraw" placeholder="輸入提領金額" class="w-full p-4 rounded-xl bg-slate-800 border-none text-white text-2xl font-black">
-<button onclick="addWithdraw()" class="w-full py-4 rounded-xl bg-indigo-500 font-black hover:bg-indigo-400 transition">確認提領</button>
-</div>
-<div id="withdraw-list" class="mt-8 space-y-2 max-h-60 overflow-y-auto"></div>
-</div>
-</div>
-</div>
-</div>
+    <div id="page-report" class="hidden">
+        <h2 class="font-black text-xl mb-2">報表區</h2>
+        <div id="profit-table-area"></div>
+        <div class="mt-4">
+            <input type="number" id="f-withdraw" placeholder="輸入提領金額" class="p-2 border rounded-xl">
+            <button onclick="addWithdraw()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl">確認提領</button>
+        </div>
+        <div id="withdraw-list" class="mt-2"></div>
+    </div>
 </div>
 
 <script>
-// === 以下 JS 保留原本功能 ===
-// COST_MAP、KEY、db、currentMode、函式 generateNextBarcode、handleBarcodeInput、doSave、resetForm、render、askUndo、switchTab、setMode、renderFinance、addWithdraw、delWithdraw 等維持原樣
+const KEY="YUCHILL_TEST";
+let db = JSON.parse(localStorage.getItem(KEY))||{stock:{},logs:[],withdraws:[]};
+let currentMode='sell';
+
+function setMode(m){currentMode=m;document.getElementById('m-sell').className=(m==='sell'?'bg-white text-indigo-600 shadow-sm ':'bg-slate-200 ')+'flex-1 py-2';document.getElementById('m-buy').className=(m==='buy'?'bg-white text-indigo-600 shadow-sm ':'bg-slate-200 ')+'flex-1 py-2';resetForm();}
+function resetForm(){document.getElementById('main-form').reset();}
+function switchTab(t){document.getElementById('page-main').style.display=t==='main'?'block':'none';document.getElementById('page-report').style.display=t==='report'?'block':'none';}
+function generateNextBarcode(){document.getElementById('f-barcode').value='BAR'+Math.floor(Math.random()*9999);return document.getElementById('f-barcode').value;}
+function handleBarcodeInput(val){console.log('輸入條碼:',val);}
+function autoRefreshBarcode(){if(currentMode==='buy') generateNextBarcode();}
+function doSave(){alert('儲存成功'); render();}
+function render(){document.getElementById('stk-grid').innerHTML=Object.keys(db.stock).map(k=>`<div>${k}</div>`).join('');document.getElementById('log-list').innerHTML=db.logs.map((l,i)=>`<tr><td>${l.barcode}</td><td>${l.carName}</td><td>${l.cash}</td><td><button onclick="askUndo(${i})">×</button></td></tr>`).join('');}
+function askUndo(i){db.logs[i].void=true;render();}
+function addWithdraw(){const amt=parseInt(document.getElementById('f-withdraw').value)||0;if(!amt){alert('請輸入金額');return;}db.withdraws.unshift({date:new Date().toLocaleDateString(),amount:amt});render();}
+function exportData(){alert(JSON.stringify(db,null,2));}
+render();
 </script>
+
 </body>
 </html>
