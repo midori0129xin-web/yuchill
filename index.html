@@ -8,6 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; }
@@ -448,69 +449,60 @@ function stopScan(video, btn) {
 
 // 1. 這是按鈕觸發的進入點
 async function handleBarcodeScan() {
-    // 檢查瀏覽器是否支援 BarcodeDetector (iOS Safari 通常需要手動開啟或 17+ 才穩定)
+    // 優先檢查是否支援原生即時掃描
     if (!('BarcodeDetector' in window)) {
         console.log("不支援原生偵測，切換拍照模式");
         document.getElementById('barcodeFileInput').click();
         return;
     }
 
-    try {
-        const detector = new BarcodeDetector({ formats: ['code_128', 'ean_13', 'qr_code'] });
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        
-        // 這裡維持你原本的即時掃描邏輯...
-        // (略過重複代碼，確保邏輯一致)
-    } catch (err) {
-        // 如果開啟相機失敗（例如使用者拒絕權限），就用拍照
-        document.getElementById('barcodeFileInput').click();
-    }
+    // 若支援，則執行即時掃描
+    startBarcodeScan();
 }
 
 // 2. 處理拍照後的圖片辨識 (針對 iPhone 重點強化)
 document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('barcodeFileInput');
-    if (fileInput) {
-        fileInput.onchange = async function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+    if (!fileInput) return;
 
-            const barcodeInput = document.getElementById('f-barcode');
-            const originalVal = barcodeInput.value;
-            barcodeInput.value = "辨識中..."; // 給使用者的視覺回饋
+    fileInput.onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-            try {
-                // 1. 建立影像點陣圖
-                const bitmap = await createImageBitmap(file);
+    const barcodeInput = document.getElementById('f-barcode');
+    const originalVal = barcodeInput.value;
+    barcodeInput.value = "讀取中...";
 
-                // 2. 再次檢查辨識器是否存在
-                if (!('BarcodeDetector' in window)) {
-                    alert("⚠️ 此瀏覽器版本太舊，不支援條碼辨識，請手動輸入數字。");
-                    barcodeInput.value = originalVal;
-                    return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        // 使用 Quagga 進行離線辨識，不依賴系統 API
+        Quagga.decodeSingle({
+            src: event.target.result,
+            numOfWorkers: 0, 
+            inputStream: { size: 1600 }, 
+            decoder: {
+                // 針對 G225... 這種條碼格式
+                readers: ["code_128_reader", "code_39_reader"] 
+            },
+            locate: true
+        }, function(result) {
+            if(result && result.codeResult) {
+                const code = result.codeResult.code.toUpperCase().trim();
+                barcodeInput.value = code;
+                
+                // 執行你原本的連動搜尋
+                if (typeof handleBarcodeInput === 'function') {
+                    handleBarcodeInput(code);
                 }
-
-                const detector = new BarcodeDetector({ formats: ['code_128', 'ean_13', 'qr_code'] });
-                const barcodes = await detector.detect(bitmap);
-
-                if (barcodes.length > 0) {
-                    const code = barcodes[0].rawValue.toUpperCase();
-                    barcodeInput.value = code;
-                    handleBarcodeInput(code); // 觸發連動邏輯
-                } else {
-                    alert("❌ 辨識失敗：找不到條碼。請確保照片清晰、不反光。");
-                    barcodeInput.value = originalVal;
-                }
-            } catch (err) {
-                console.error("辨識錯誤詳情:", err);
-                alert("辨識過程發生錯誤，請手動輸入。");
+            } else {
+                alert("❌ 辨識失敗：請確保條碼清晰、橫向拍攝。如果是拍電腦螢幕，請拿遠一點避開波紋。");
                 barcodeInput.value = originalVal;
             }
-        };
-    }
+        });
+    };
+    reader.readAsDataURL(file);
+};
 });
-
-
 
 </script>
 </body>
