@@ -476,27 +476,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const reader = new FileReader();
     reader.onload = function(event) {
         // 使用 Quagga 進行離線辨識，不依賴系統 API
-        Quagga.decodeSingle({
+                Quagga.decodeSingle({
             src: event.target.result,
-            numOfWorkers: 0, 
-            inputStream: { size: 1600 }, 
+            inputStream: { size: 1200 }, // 在這裡增加這行
             decoder: {
-                // 針對 G225... 這種條碼格式
                 readers: ["code_128_reader", "code_39_reader"] 
             },
-            locate: true
+            locate: true // 也建議加上這行，增加掃描精準度
         }, function(result) {
             if(result && result.codeResult) {
-                const code = result.codeResult.code.toUpperCase().trim();
-                barcodeInput.value = code;
-                
-                // 執行你原本的連動搜尋
-                if (typeof handleBarcodeInput === 'function') {
-                    handleBarcodeInput(code);
-                }
-            } else {
-                alert("❌ 辨識失敗：請確保條碼清晰、橫向拍攝。如果是拍電腦螢幕，請拿遠一點避開波紋。");
-                barcodeInput.value = originalVal;
+                const code = result.codeResult.code.toUpperCase().trim();barcodeInput.value = code;
+            if(typeof handleBarcodeInput === 'function'){handleBarcodeInput(code); }} else {
+                alert("❌ 辨識失敗：請確保條碼清晰、橫向拍攝。");
+              barcodeInput.value = originalVal;
             }
         });
     };
