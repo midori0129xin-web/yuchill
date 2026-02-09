@@ -186,6 +186,7 @@ let db = JSON.parse(localStorage.getItem(KEY)) || {
 let currentMode = 'sell';
 let html5QrCode = null;
 
+// --------- Tab & Mode ---------
 function switchTab(t) {
     document.getElementById('page-main').style.display = t === 'main' ? 'block' : 'none';
     document.getElementById('page-report').style.display = t === 'report' ? 'block' : 'none';
@@ -202,6 +203,7 @@ function setMode(m) {
     resetForm(); 
 }
 
+// --------- Barcode & Auto-fill ---------
 function generateNextBarcode() {
     const carEl = document.getElementById('f-car-type');
     const colorEl = document.getElementById('f-color');
@@ -210,15 +212,10 @@ function generateNextBarcode() {
     const date = document.getElementById('f-date').value;
     if (!carCode || !date) return "";
 
-    // 日期格式 YYMMDD
     const dateStr = date.slice(2,4) + date.slice(5,7) + date.slice(8,10);
-
-    // 收集目前同車組+顏色+日期的流水號
     const usedNums = new Set();
     db.logs.forEach(l => {
-        if(l.void) return;
-        if(!l.barcode) return;
-
+        if(l.void || !l.barcode) return;
         const m = l.barcode.match(/^([A-Z]{1,2})(\d{2})(\d{6})(\d{2})$/);
         if(!m) return;
         const [_, lCar, lColor, lDate, lSeq] = m;
@@ -226,23 +223,53 @@ function generateNextBarcode() {
             usedNums.add(parseInt(lSeq, 10));
         }
     });
-
-    // 找最小可用流水號，從 01 開始
     let nextNum = 1;
     while(usedNums.has(nextNum)) nextNum++;
-    const seqStr = String(nextNum).padStart(2, "0");
-
-    return `${carCode}${colorCode}${dateStr}${seqStr}`;
+    return `${carCode}${colorCode}${dateStr}${String(nextNum).padStart(2,"0")}`;
 }
 
-
 function autoRefreshBarcode() { 
-    if(currentMode === 'buy') {
+    if(currentMode === 'buy'){
         const newCode = generateNextBarcode();
         if(newCode) document.getElementById('f-barcode').value = newCode;
     }
 }
 
+function handleBarcodeInput(val) {
+    document.getElementById('f-barcode').value = val.toUpperCase();
+}
+
+async function handleBarcodeScan() {
+    const wrapper = document.getElementById('qr-reader-wrapper');
+    wrapper.style.display = 'flex';
+    html5QrCode = new Html5Qrcode("reader");
+    
+    try {
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 280, height: 180 } },
+            (decodedText) => {
+                document.getElementById('f-barcode').value = decodedText.toUpperCase();
+                handleBarcodeInput(decodedText);
+                stopScan();
+            },
+            (err) => {}
+        );
+    } catch(err) {
+        console.error("QR掃描啟動失敗", err);
+        wrapper.style.display = 'none';
+    }
+}
+
+function stopScan() {
+    const wrapper = document.getElementById('qr-reader-wrapper');
+    wrapper.style.display = 'none';
+    if(html5QrCode) {
+        html5QrCode.stop().catch(e => console.error(e));
+    }
+}
+
+// --------- Form & Save ---------
 function doSave() {
     const dateVal = document.getElementById('f-date').value;
     if(!dateVal) return alert("請選擇日期");
@@ -253,19 +280,12 @@ function doSave() {
 
     const carName = document.getElementById('f-car-type').value || "維修項目";
     const batt = document.getElementById('f-batt').value;
-
-    // ✅ 這行是關鍵：建立「本次進貨的暫存流水池」
     const tempUsed = new Set();
 
     for (let i = 0; i < qty; i++) {
-
         let codeToUse;
-
-        if (currentMode === 'buy') {
-            do {
-                codeToUse = generateNextBarcode();
-            } while (tempUsed.has(codeToUse));
-
+        if(currentMode === 'buy') {
+            do { codeToUse = generateNextBarcode(); } while(tempUsed.has(codeToUse));
             tempUsed.add(codeToUse);
         } else {
             codeToUse = document.getElementById('f-barcode').value.toUpperCase() || "MANUAL";
@@ -279,17 +299,16 @@ function doSave() {
             motor: document.getElementById('f-motor').value,
             type: currentMode,
             void: false,
-            cash: i === 0 ? (parseInt(document.getElementById('f-cash').value) || 0) : 0,
-            bank: i === 0 ? (parseInt(document.getElementById('f-bank').value) || 0) : 0,
+            cash: i===0 ? (parseInt(document.getElementById('f-cash').value)||0) : 0,
+            bank: i===0 ? (parseInt(document.getElementById('f-bank').value)||0) : 0,
             batt,
             ps: []
         };
 
         db.logs.unshift(entry);
-
         const mod = (currentMode === 'sell' ? -1 : 1);
-        if(db.stock[carName] !== undefined) db.stock[carName] += mod;
-        if(batt && db.stock[batt] !== undefined) db.stock[batt] += mod;
+        if(db.stock[carName]!==undefined) db.stock[carName] += mod;
+        if(batt && db.stock[batt]!==undefined) db.stock[batt] += mod;
     }
 
     localStorage.setItem(KEY, JSON.stringify(db));
@@ -298,8 +317,6 @@ function doSave() {
     alert(`成功儲存 ${qty} 筆`);
 }
 
-
-        
 function resetForm() {
     document.getElementById('main-form').reset();
     document.getElementById('f-date').valueAsDate = new Date();
@@ -307,6 +324,7 @@ function resetForm() {
     autoRefreshBarcode();
 }
 
+// --------- Render ---------
 function render() {
     document.getElementById('stk-grid').innerHTML = Object.entries(db.stock)
         .map(([k,v]) => `<div class="bg-white p-4 rounded-2xl border text-center shadow-sm">
@@ -329,130 +347,19 @@ function render() {
         </tr>`).join('');
 }
 
+// --------- Undo ---------
 function askUndo(idx) {
     if(confirm("確定刪除？")) {
         const l = db.logs[idx];
         const mod = (l.type === 'sell' ? 1 : -1);
-        if(db.stock[l.carName] !== undefined) db.stock[l.carName] += mod;
-        if(l.batt && db.stock[l.batt] !== undefined) db.stock[l.batt] += mod;
+        if(db.stock[l.carName]!==undefined) db.stock[l.carName] += mod;
+        if(l.batt && db.stock[l.batt]!==undefined) db.stock[l.batt] += mod;
         l.void = true;
         localStorage.setItem(KEY, JSON.stringify(db));
         render();
     }
 }
-
-function renderFinance() {
-    let totalProfit = 0, stockCost = 0;
-    const activeLogs = db.logs.filter(l => !l.void && l.type === 'sell');
-    Object.entries(db.stock).forEach(([n, q]) => { if(q>0) stockCost += (q * (COST_MAP[n]||0)); });
-    const totalWithdrawn = db.withdraws.reduce((sum, w) => sum + w.amount, 0);
-
-    let html = `<h3 class="font-black text-xl mb-6">銷售利潤明細</h3><table class="w-full text-left"><thead><tr class="text-slate-400 text-sm border-b"><th class="pb-4">條碼</th><th class="pb-4">項目</th><th class="pb-4 text-right">利潤</th></tr></thead><tbody>`;
-    activeLogs.forEach(l => {
-        const income = (l.cash + l.bank);
-        const profit = income - (l.baseCost || 0);
-        totalProfit += profit;
-        html += `<tr class="border-b border-slate-50"><td class="py-4 font-mono text-xs">${l.barcode}</td><td class="py-4 font-bold text-sm">${l.carName}</td><td class="text-right font-black text-emerald-600">$${profit.toLocaleString()}</td></tr>`;
-    });
-    html += `</tbody></table>`;
-    document.getElementById('profit-table-area').innerHTML = html;
-
-    const reserveNeeded = Math.max(0, 100000 - stockCost);
-    const canWithdrawTotal = totalProfit - reserveNeeded;
-    const remainingWithdraw = canWithdrawTotal - totalWithdrawn;
-
-    document.getElementById('fin-assets').innerHTML = `
-        <div class="bg-white p-6 rounded-[2rem] shadow-sm border"><div class="text-xs font-black text-slate-400">總利潤</div><div class="text-2xl font-black">$${totalProfit.toLocaleString()}</div></div>
-        <div class="bg-white p-6 rounded-[2rem] shadow-sm border"><div class="text-xs font-black text-indigo-400">可提(扣預留)</div><div class="text-2xl font-black text-indigo-600">$${canWithdrawTotal.toLocaleString()}</div></div>
-        <div class="bg-emerald-500 p-6 rounded-[2rem] text-white shadow-xl"><div class="text-xs font-black opacity-80">剩餘可提餘額</div><div class="text-3xl font-black">$${remainingWithdraw.toLocaleString()}</div></div>
-    `;
-
-    document.getElementById('withdraw-list').innerHTML = db.withdraws.map((w, i) => `<div class="flex justify-between bg-slate-800 p-3 rounded-xl"><span>${w.date}</span><b>$${w.amount}</b></div>`).join('');
-}
-
-function addWithdraw() {
-    const amt = parseInt(document.getElementById('f-withdraw').value);
-    if(amt > 0) {
-        db.withdraws.unshift({ date: new Date().toLocaleDateString(), amount: amt });
-        localStorage.setItem(KEY, JSON.stringify(db));
-        renderFinance();
-    }
-}
-
-function exportData() {
-    const blob = new Blob([JSON.stringify(db, null, 2)], {type: "application/json"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `YUCHILL_BACKUP.json`;
-    a.click();
-}
-
-async function handleBarcodeScan() {
-    const wrapper = document.getElementById('qr-reader-wrapper');
-    wrapper.style.display = 'flex';
-    html5QrCode = new Html5Qrcode("reader");
-    
-    try {
-        await html5QrCode.start(
-            { facingMode: "environment" }, 
-            { fps: 10, qrbox: { width: 280, height: 180 } },
-            (decodedText) => {
-                document.getElementById('f-barcode').value = decodedText.toUpperCase();
-                handleBarcodeInput(decodedText);
-                stopScan();
-            },
-            (err) => {}
-        );
-    } catch (err) {
-        console.error("相機啟動失敗", err);
-        document.getElementById('barcodeFileInput').click();
-        wrapper.style.display = 'none';
-    }
-}
-
-function stopScan() {
-    if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-            document.getElementById('qr-reader-wrapper').style.display = 'none';
-        });
-    } else {
-        document.getElementById('qr-reader-wrapper').style.display = 'none';
-    }
-}
-
-        function clearAllData() {
-    if (!confirm("⚠️ 確定要清除【所有紀錄】嗎？\n此動作無法復原")) return;
-
-    // 重置 db
-    db = {
-        stock: { 
-            "J寄賣款(8)":0, "J寄賣款/車":0, "G青春版(8)":0, "Q特惠版":0, 
-            "W高配版":0, "Q特惠X防盜":0, "8AH":0, "20AH":0, "30AH":0, 
-            "兒童座椅":0, "定時器":0, "水杯架":0, "雙杯手機架":0, 
-            "後照鏡2長":0, "後座靠背":0, "後腳踏/塑":0, "後腳踏/鐵":0 
-        },
-        logs: [],
-        withdraws: []
-    };
-
-    localStorage.setItem(KEY, JSON.stringify(db));
-
-    // 重繪 UI
-    render();
-    renderFinance();
-    resetForm();
-
-    alert("✅ 所有紀錄已清除");
-}
-
-}
-        
-// 初始化
-document.addEventListener('DOMContentLoaded', () => {
-    resetForm();
-    render();
-    document.getElementById('f-barcode').addEventListener('input', (e) => handleBarcodeInput(e.target.value));
-});
 </script>
+
     </body>
 </html>
