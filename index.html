@@ -7,20 +7,42 @@
 <meta name="apple-mobile-web-app-title" content="YUCHILL">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #0f172a; }
-        .tab-active { background: #4f46e5 !important; color: white !important; }
-        .void-line { text-decoration: line-through; opacity: 0.15; filter: grayscale(1); pointer-events: none; }
-        input, select { border: 1px solid #cbd5e1 !important; font-weight: 800; }
-        .log-title { font-weight: 900; font-size: 16px; }
-        .log-detail { font-weight: 800; font-size: 14px; line-height: 1.6; color: #334155; }
-    </style>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+    /* 掃描器浮層樣式 */
+    #qr-reader-wrapper {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85);
+        z-index: 9999;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    #reader {
+        width: 320px;
+        border-radius: 20px;
+        overflow: hidden;
+        background: #000;
+    }
+    .scan-close-btn {
+        margin-top: 20px;
+        padding: 12px 40px;
+        background: #ef4444;
+        color: white;
+        border-radius: 99px;
+        font-weight: 900;
+    }
+</style>
 </head>
 <body class="pb-10">
-
+<div id="qr-reader-wrapper">
+    <div id="reader"></div>
+    <button type="button" onclick="stopScan()" class="scan-close-btn">取消掃描</button>
+</div>
+        
     <nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto p-3 sm:p-4 mt-3 sm:mt-6">
             <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600">v71</span></h1>
@@ -374,75 +396,57 @@ if (batt && db.stock[batt] !== undefined) {
         render();
    
 /* ===== 手機條碼掃描（原生 Camera） ===== */
-let barcodeStream = null;
+let html5QrCode = null;
 
-async function startBarcodeScan() {
-    if (!('BarcodeDetector' in window)) {
-        alert('此裝置不支援條碼掃描，請手動輸入');
-        return;
-    }
+async function handleBarcodeScan() {
+    const wrapper = document.getElementById('qr-reader-wrapper');
+    wrapper.style.display = 'flex';
+
+    html5QrCode = new Html5Qrcode("reader");
+    
+    const config = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 150 }, // 矩形框適合一維條碼
+        aspectRatio: 1.0
+    };
 
     try {
-        const detector = new BarcodeDetector({
-            formats: ['code_128', 'ean_13', 'ean_8', 'qr_code']
-        });
-
-        const video = document.createElement('video');
-        video.style.position = 'fixed';
-        video.style.top = '0';
-        video.style.left = '0';
-        video.style.width = '100vw';
-        video.style.height = '100vh';
-        video.style.objectFit = 'cover';
-        video.style.zIndex = '9999';
-        video.style.background = '#000';
-
-        const closeBtn = document.createElement('button');
-        closeBtn.innerText = '✕';
-        closeBtn.style.position = 'fixed';
-        closeBtn.style.top = '20px';
-        closeBtn.style.right = '20px';
-        closeBtn.style.zIndex = '10000';
-        closeBtn.style.fontSize = '28px';
-        closeBtn.style.color = '#fff';
-
-        document.body.append(video, closeBtn);
-
-        barcodeStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
-        });
-
-        video.srcObject = barcodeStream;
-        await video.play();
-
-        closeBtn.onclick = () => stopScan(video, closeBtn);
-
-        const scanLoop = async () => {
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                const barcodes = await detector.detect(video);
-                if (barcodes.length) {
-                    document.getElementById('f-barcode').value = barcodes[0].rawValue.toUpperCase();
-                    handleBarcodeInput(barcodes[0].rawValue);
-                    stopScan(video, closeBtn);
-                    return;
+        await html5QrCode.start(
+            { facingMode: "environment" }, 
+            config,
+            (decodedText) => {
+                // 成功掃描後的動作
+                const code = decodedText.toUpperCase().trim();
+                document.getElementById('f-barcode').value = code;
+                
+                // 觸發你原本的邏輯：帶入庫存資料
+                if (typeof handleBarcodeInput === "function") {
+                    handleBarcodeInput(code);
                 }
+                
+                alert("掃描成功: " + code);
+                stopScan();
+            },
+            (errorMessage) => {
+                // 掃描中的錯誤不處理，避免刷屏
             }
-            requestAnimationFrame(scanLoop);
-        };
-        scanLoop();
-
+        );
     } catch (err) {
-        alert('無法開啟相機');
+        alert("無法啟動相機: " + err);
+        wrapper.style.display = 'none';
     }
 }
 
-function stopScan(video, btn) {
-    if (barcodeStream) {
-        barcodeStream.getTracks().forEach(t => t.stop());
-        barcodeStream = null;
+function stopScan() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            document.getElementById('qr-reader-wrapper').style.display = 'none';
+        }).catch(err => {
+            document.getElementById('qr-reader-wrapper').style.display = 'none';
+        });
+    } else {
+        document.getElementById('qr-reader-wrapper').style.display = 'none';
     }
-    video.remove();
-    btn.remove();
 }
 
 /* ===== 條碼掃描邏輯（整合修正版） ===== */
