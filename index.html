@@ -250,6 +250,8 @@ function doSave() {
     try {
         const dateVal = document.getElementById('f-date').value;
         if(!dateVal) return alert("請選擇日期");
+        const carName = document.getElementById('f-car-type').value || "";
+        if(currentMode==='buy' && !carName) return alert("請選擇車組"); // 車組防呆
         const qty = currentMode === 'buy' ? (parseInt(document.getElementById('f-qty').value)||1) : 1;
         const carName = document.getElementById('f-car-type').value || "維修項目";
         const batt = document.getElementById('f-batt').value;
@@ -331,6 +333,21 @@ function askUndo(idx){
     }
 }
 
+function clearAllData() {
+    if(confirm("確定要清除所有紀錄嗎？")){
+        db = { 
+            stock: { "J寄賣款(8)":0, "J寄賣款/車":0, "G青春版(8)":0, "Q特惠版":0, "W高配版":0, "Q特惠X防盜":0, "8AH":0, "20AH":0, "30AH":0, "兒童座椅":0, "定時器":0, "水杯架":0, "雙杯手機架":0, "後照鏡2長":0, "後座靠背":0, "後腳踏/塑":0, "後腳踏/鐵":0 }, 
+            logs: [],
+            withdraws: [] 
+        };
+        localStorage.setItem(KEY, JSON.stringify(db));
+        render();
+        renderFinance();
+        alert("所有紀錄已清除");
+    }
+}
+
+        
 // ----- 財務報表 -----
 function renderFinance(){
     try{
