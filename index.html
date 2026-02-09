@@ -57,6 +57,7 @@
         <div class="max-w-7xl mx-auto p-4 flex justify-between items-center">
             <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600 text-sm">5207418</span></h1>
             <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm">備份資料</button>
+            <button onclick="clearAllData()" class="bg-red-500 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm ml-2">清除所有紀錄</button>
         </div>
         <div class="px-4 pb-3">
             <div class="flex w-full bg-slate-100 rounded-2xl p-1 max-w-md mx-auto">
@@ -391,6 +392,23 @@
 
         document.getElementById('f-date').valueAsDate = new Date();
         render();
+
+        function clearAllData() {
+    if (confirm("確定要刪除所有歷史紀錄與庫存資料嗎？此動作無法復原！")) {
+        // 1. 清除所有的 localStorage 紀錄
+        localStorage.clear();
+        
+        // 2. 清除 Service Worker 的快取 (讓程式更新到最新版)
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                for (let name of names) caches.delete(name);
+            });
+        }
+        
+        alert("資料已成功清除！程式將自動重新整理。");
+        location.reload(); // 重新整理頁面
+    }
+}
     </script>
 </body>
 </html>
