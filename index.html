@@ -56,7 +56,15 @@
     <nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto p-4 flex justify-between items-center">
             <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600 text-sm">5207418</span></h1>
-            <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm">備份資料</button>
+            <div class="grid grid-cols-2 gap-2">
+    <button onclick="syncToCloud()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center">
+        ☁️ 備份至雲端
+    </button>
+    <button onclick="loadFromCloud()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center">
+        📥 從雲端同步
+    </button>
+</div>
+
             <button onclick="clearAllData()" class="bg-red-500 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm ml-2">清除所有紀錄</button>
         </div>
         <div class="px-4 pb-3">
@@ -278,6 +286,68 @@
 
     localStorage.setItem(KEY, JSON.stringify(db));
     render(); resetForm(); alert(`成功儲存 ${qty} 筆`);
+}
+
+// ⚠️ 請務必換成你部署 Google Apps Script 後得到的網址
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfg9eJzk6J2-v_X5L1_9BFYo90TVpSpn30MCYSKxZqSuN-yj0PTWvE6mX-FDCfMTCg/exec"; 
+
+// 功能一：備份資料到 Google 試算表 (取代匯出)
+async function syncToCloud() {
+    const history = JSON.parse(localStorage.getItem('yuchill_history') || '[]');
+    if (history.length === 0) return alert("目前沒有紀錄可以備份");
+
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "<span>⌛ 同步中...</span>";
+    btn.disabled = true;
+
+    try {
+        // 使用 POST 將整份 localStorage 傳送到試算表
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', // 解決跨網域問題
+            body: JSON.stringify({ type: 'SYNC_ALL', data: history })
+        });
+        
+        alert('✅ 已備份至 Google 試算表！\n手機與電腦現在可以同步了。');
+    } catch (error) {
+        console.error(error);
+        alert('❌ 備份失敗，請檢查網路或 API 設定');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+// 功能二：從 Google 試算表抓回資料 (取代匯入)
+async function loadFromCloud() {
+    if (!confirm("⚠️ 確定要從雲端同步嗎？\n這會把這台裝置目前的紀錄「替換」成雲端上的資料。")) return;
+
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "<span>⌛ 讀取中...</span>";
+
+    try {
+        const response = await fetch(SCRIPT_URL);
+        const cloudData = await response.json();
+
+        if (cloudData && cloudData.length > 0) {
+            // 直接取代本地的 LocalStorage
+            localStorage.setItem('yuchill_history', JSON.stringify(cloudData));
+            
+            // 重新執行你原本的渲染函數，讓畫面更新
+            if (typeof render === "function") render(); 
+            
+            alert('✅ 同步成功！已載入 ' + cloudData.length + ' 筆最新紀錄。');
+        } else {
+            alert('查無雲端資料');
+        }
+    } catch (error) {
+        console.error(error);
+        alert('❌ 讀取失敗，請確認 Google 腳本是否已正確部署');
+    } finally {
+        btn.innerHTML = originalText;
+    }
 }
 
 
