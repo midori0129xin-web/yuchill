@@ -1,3 +1,6 @@
+// 最小可用 Service Worker：只負責啟用 PWA
+self.addEventListener('fetch', () => {});
+
 // 1. 定義快取名稱與版本 (每次更新 HTML 時，手動改這個編號)
 const CACHE_NAME = 'yuchill-app-v101';
 
@@ -47,4 +50,5 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
 
