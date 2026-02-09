@@ -202,21 +202,34 @@ function setMode(m) {
     resetForm(); 
 }
 
-function generateNextBarcode(offset = 0) {
+function generateNextBarcode() {
     const carEl = document.getElementById('f-car-type');
     const carCode = carEl.options[carEl.selectedIndex]?.dataset.code;
-    const colorCode = document.getElementById('f-color').value || "0";
-    const dateStr = document.getElementById('f-date').value;
-    if(!carCode || !dateStr) return "";
-    const shortDate = dateStr.replace(/-/g, '').substring(2);
+    if (!carCode) return "";
 
-    const matchedLogs = db.logs.filter(l => !l.void && l.barcode && l.barcode.startsWith(carCode + colorCode + shortDate));
-    let maxNum = 0;
-    if (matchedLogs.length > 0) {
-        const nums = matchedLogs.map(l => parseInt(l.barcode.slice(-2))).filter(n => !isNaN(n));
-        if(nums.length > 0) maxNum = Math.max(...nums);
+    // 收集目前還存在的流水號
+    const usedNums = new Set();
+
+    db.logs.forEach(l => {
+        if (l.void) return;
+        if (!l.barcode) return;
+
+        // 只接受像 J01、Q12 這種
+        const m = l.barcode.match(/^([A-Z])(\d{2})$/);
+        if (!m) return;
+
+        if (m[1] === carCode) {
+            usedNums.add(parseInt(m[2], 10));
+        }
+    });
+
+    // 找最小可用流水（從 1 開始）
+    let nextNum = 1;
+    while (usedNums.has(nextNum)) {
+        nextNum++;
     }
-    return `${carCode}${colorCode}${shortDate}${(maxNum + 1 + offset).toString().padStart(2, '0')}`;
+
+    return `${carCode}${String(nextNum).padStart(2, '0')}`;
 }
 
 function autoRefreshBarcode() { 
@@ -229,35 +242,60 @@ function autoRefreshBarcode() {
 function doSave() {
     const dateVal = document.getElementById('f-date').value;
     if(!dateVal) return alert("請選擇日期");
-    
-    const qty = currentMode === 'buy' ? (parseInt(document.getElementById('f-qty').value) || 1) : 1;
+
+    const qty = currentMode === 'buy'
+        ? (parseInt(document.getElementById('f-qty').value) || 1)
+        : 1;
+
     const carName = document.getElementById('f-car-type').value || "維修項目";
     const batt = document.getElementById('f-batt').value;
 
-    for(let i = 0; i < qty; i++) {
-        let codeToUse = currentMode === 'buy' ? generateNextBarcode(i) : (document.getElementById('f-barcode').value.toUpperCase() || "MANUAL");
-        if(!codeToUse) codeToUse = currentMode === 'buy' ? generateNextBarcode() : "MANUAL";
+    // ✅ 這行是關鍵：建立「本次進貨的暫存流水池」
+    const tempUsed = new Set();
+
+    for (let i = 0; i < qty; i++) {
+
+        let codeToUse;
+
+        if (currentMode === 'buy') {
+            do {
+                codeToUse = generateNextBarcode();
+            } while (tempUsed.has(codeToUse));
+
+            tempUsed.add(codeToUse);
+        } else {
+            codeToUse = document.getElementById('f-barcode').value.toUpperCase() || "MANUAL";
+        }
 
         const entry = {
-            date: dateVal, carName, barcode: codeToUse,
-            vin: document.getElementById('f-vin').value, motor: document.getElementById('f-motor').value,
-            type: currentMode, void: false,
-            cash: i===0 ? (parseInt(document.getElementById('f-cash').value)||0) : 0,
-            bank: i===0 ? (parseInt(document.getElementById('f-bank').value)||0) : 0,
-            batt, ps: [] 
+            date: dateVal,
+            carName,
+            barcode: codeToUse,
+            vin: document.getElementById('f-vin').value,
+            motor: document.getElementById('f-motor').value,
+            type: currentMode,
+            void: false,
+            cash: i === 0 ? (parseInt(document.getElementById('f-cash').value) || 0) : 0,
+            bank: i === 0 ? (parseInt(document.getElementById('f-bank').value) || 0) : 0,
+            batt,
+            ps: []
         };
+
         db.logs.unshift(entry);
 
         const mod = (currentMode === 'sell' ? -1 : 1);
         if(db.stock[carName] !== undefined) db.stock[carName] += mod;
         if(batt && db.stock[batt] !== undefined) db.stock[batt] += mod;
     }
+
     localStorage.setItem(KEY, JSON.stringify(db));
-    render(); 
-    resetForm(); 
+    render();
+    resetForm();
     alert(`成功儲存 ${qty} 筆`);
 }
 
+
+        
 function resetForm() {
     document.getElementById('main-form').reset();
     document.getElementById('f-date').valueAsDate = new Date();
