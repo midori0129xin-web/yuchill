@@ -416,6 +416,33 @@ function stopScan() {
     }
 }
 
+        function clearAllData() {
+    if (!confirm("⚠️ 確定要清除【所有紀錄】嗎？\n此動作無法復原")) return;
+
+    // 重置 db
+    db = {
+        stock: { 
+            "J寄賣款(8)":0, "J寄賣款/車":0, "G青春版(8)":0, "Q特惠版":0, 
+            "W高配版":0, "Q特惠X防盜":0, "8AH":0, "20AH":0, "30AH":0, 
+            "兒童座椅":0, "定時器":0, "水杯架":0, "雙杯手機架":0, 
+            "後照鏡2長":0, "後座靠背":0, "後腳踏/塑":0, "後腳踏/鐵":0 
+        },
+        logs: [],
+        withdraws: []
+    };
+
+    localStorage.setItem(KEY, JSON.stringify(db));
+
+    // 重繪 UI
+    render();
+    renderFinance();
+    resetForm();
+
+    alert("✅ 所有紀錄已清除");
+}
+
+}
+        
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
     resetForm();
