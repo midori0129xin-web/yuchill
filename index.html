@@ -55,7 +55,7 @@
 
     <nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto p-4 flex justify-between items-center">
-            <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600 text-sm">v71</span></h1>
+            <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600 text-sm">5207418</span></h1>
             <button onclick="exportData()" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm shadow-sm">備份資料</button>
         </div>
         <div class="px-4 pb-3">
@@ -76,53 +76,61 @@
                             <button type="button" onclick="setMode('buy')" id="m-buy" class="flex-1 py-4 rounded-xl text-slate-400">採購 / 進貨</button>
                         </div>
 
-                        <div class="flex gap-4">
-                            <div class="flex-1">
+                        <div class="flex gap-10">
+                            <div class="flex-1.5">
                                 <label class="text-xs font-black text-slate-400 ml-1">交易日期</label>
-                                <input type="date" id="f-date" class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none font-bold">
+                                <input type="date" id="f-date" class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none font-bold">
                             </div>
-                            <div id="buy-qty-area" class="hidden w-32">
-                                <label class="text-xs font-black text-orange-500 ml-1">數量</label>
-                                <input type="number" id="f-qty" value="1" min="1" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 text-center border-none">
+                            <div id="buy-qty-area" class="hidden w-16 flex-shrink-0">
+
+                                <label class="text-xs font-black text-orange-500 ml-4">數量</label>
+                                <input type="number" id="f-qty" value="1" min="1" inputmode="numeric" class="w-full bg-orange-50 py-4 px-4 rounded-2xl font-black text-orange-600 text-center border border-orange-200 outline-none">
                             </div>
                         </div>
 
                         <div class="p-5 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
                             <div class="flex flex-col gap-2">
                                 <label class="text-xs font-black text-indigo-400 ml-1">條碼編號</label>
-                                <div class="flex gap-2">
-                                    <input type="text" id="f-barcode" oninput="handleBarcodeInput(this.value)" placeholder="手動輸入或掃描" class="flex-1 p-4 rounded-2xl font-black text-indigo-700 text-center uppercase bg-white border border-indigo-100 shadow-sm outline-none">
-                                    <button type="button" onclick="handleBarcodeScan()" class="bg-indigo-600 px-6 py-4 rounded-2xl text-white shadow-lg hover:bg-indigo-700 transition flex items-center gap-2">
-                                        <span class="text-xl">📷</span>
-                                    </button>
-                                </div>
+                                <div class="relative w-full">
+  <input type="text" id="f-barcode" 
+    oninput="handleBarcodeInput(this.value)" 
+    placeholder="手動輸入或掃描" 
+    class="w-full p-4 pr-16 rounded-2xl font-black text-indigo-700 text-center uppercase bg-white border border-indigo-200 shadow-sm outline-none">
+  
+  <button type="button" 
+    onclick="handleBarcodeScan()" 
+    class="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-600 w-12 h-12 rounded-2xl text-white shadow-lg hover:bg-indigo-700 transition flex items-center justify-center">
+    
+    <span class="text-xl">📷</span>
+  </button>
+</div>
                                 <input type="file" id="barcodeFileInput" accept="image/*" capture="environment" class="hidden">
                             </div>
                                             
                             <div class="grid grid-cols-2 gap-2">
-                                <select id="f-car-type" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border">
+                                <select id="f-car-type" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border border-slate-200">
                                     <option value="">- 車組 -</option>
                                     <option data-code="J">J寄賣款(8)</option><option data-code="J">J寄賣款/車</option><option data-code="G">G青春版(8)</option>
                                     <option data-code="Q">Q特惠版</option><option data-code="W">W高配版</option><option data-code="Q">Q特惠X防盜</option>
                                     <option data-code="S" value="維修服務">維修服務</option>
                                 </select>
-                                <select id="f-color" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border">
+                                <select id="f-color" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border border-slate-200">
                                     <option value="">- 顏色 -</option>
                                     <option value="1">黑</option><option value="2">白</option><option value="3">粉</option><option value="4">藍</option><option value="5">紫</option><option value="6">紅</option>
                                 </select>
                             </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <input type="text" id="f-vin" placeholder="車架號" class="p-4 rounded-xl font-bold bg-white text-sm border">
-                                <input type="text" id="f-motor" placeholder="電機號" class="p-4 rounded-xl font-bold bg-white text-sm border">
+                            <div class="flex flex-col gap-2">
+                                <input type="text" id="f-vin" placeholder="車架號" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200">
+                                <input type="text" id="f-motor" placeholder="電機號" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200">
                             </div>
-                            <select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border">
+                            <select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border border-slate-200">
                                 <option value="">- 電池 -</option><option>8AH</option><option>20AH</option><option>30AH</option>
                             </select>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
-                            <input type="number" id="f-cash" inputmode="numeric" placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl">
-                            <input type="number" id="f-bank" inputmode="numeric" placeholder="🏦 轉帳收" class="p-6 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl">
+                            <input type="number" id="f-cash" inputmode="numeric" placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border border-amber-100">
+                            <input type="number" id="f-bank" inputmode="numeric" placeholder="🏦 轉帳收" class="p-6 rounded-2xl bg-blue-50 font-black text-blue-800 text-center text-xl border border-blue-100">
                         </div>
 
                         <div class="flex gap-3">
@@ -234,15 +242,13 @@
                 let codeToUse = document.getElementById('f-barcode').value.toUpperCase();
                 if(!codeToUse) codeToUse = currentMode === 'buy' ? generateNextBarcode() : "MANUAL";
 
-                let baseCost = (COST_MAP[carName] || 0) + (COST_MAP[batt] || 0);
-
                 const entry = {
                     date: dateVal, carName, barcode: codeToUse,
                     vin: document.getElementById('f-vin').value, motor: document.getElementById('f-motor').value,
                     type: currentMode, void: false,
                     cash: i===0 ? (parseInt(document.getElementById('f-cash').value)||0) : 0,
                     bank: i===0 ? (parseInt(document.getElementById('f-bank').value)||0) : 0,
-                    batt, ps: [] // 配件簡化，可按需求擴展
+                    batt, ps: [] 
                 };
                 
                 db.logs.unshift(entry);
@@ -336,11 +342,9 @@
             a.click();
         }
 
-        /* ===== 條碼掃描模組 ===== */
         let html5QrCode = null;
 
         async function handleBarcodeScan() {
-            // 嘗試啟動相機
             const wrapper = document.getElementById('qr-reader-wrapper');
             wrapper.style.display = 'flex';
             html5QrCode = new Html5Qrcode("reader");
@@ -358,7 +362,6 @@
                 );
             } catch (err) {
                 console.error("相機啟動失敗", err);
-                // 失敗時自動切換至相簿選擇 (針對某些 iPhone 環境)
                 document.getElementById('barcodeFileInput').click();
                 wrapper.style.display = 'none';
             }
@@ -374,11 +377,9 @@
             }
         }
 
-        // 處理照片掃描
         document.getElementById('barcodeFileInput').onchange = e => {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new Html5QrcodeScanner("reader", { fps: 10 }); // 僅用於調用靜態辨識
             const html5QrCodeStatic = new Html5Qrcode("reader");
             html5QrCodeStatic.scanFile(file, true)
                 .then(decodedText => {
