@@ -204,33 +204,37 @@ function setMode(m) {
 
 function generateNextBarcode() {
     const carEl = document.getElementById('f-car-type');
-    const carCode = carEl.options[carEl.selectedIndex]?.dataset.code;
-    if (!carCode) return "";
+    const colorEl = document.getElementById('f-color');
+    const carCode = carEl.options[carEl.selectedIndex]?.dataset.code || "";
+    const colorCode = colorEl.value || "01";
+    const date = document.getElementById('f-date').value;
+    if (!carCode || !date) return "";
 
-    // 收集目前還存在的流水號
+    // 日期格式 YYMMDD
+    const dateStr = date.slice(2,4) + date.slice(5,7) + date.slice(8,10);
+
+    // 收集目前同車組+顏色+日期的流水號
     const usedNums = new Set();
-
     db.logs.forEach(l => {
-        if (l.void) return;
-        if (!l.barcode) return;
+        if(l.void) return;
+        if(!l.barcode) return;
 
-        // 只接受像 J01、Q12 這種
-        const m = l.barcode.match(/^([A-Z])(\d{2})$/);
-        if (!m) return;
-
-        if (m[1] === carCode) {
-            usedNums.add(parseInt(m[2], 10));
+        const m = l.barcode.match(/^([A-Z]{1,2})(\d{2})(\d{6})(\d{2})$/);
+        if(!m) return;
+        const [_, lCar, lColor, lDate, lSeq] = m;
+        if(lCar === carCode && lColor === colorCode && lDate === dateStr) {
+            usedNums.add(parseInt(lSeq, 10));
         }
     });
 
-    // 找最小可用流水（從 1 開始）
+    // 找最小可用流水號，從 01 開始
     let nextNum = 1;
-    while (usedNums.has(nextNum)) {
-        nextNum++;
-    }
+    while(usedNums.has(nextNum)) nextNum++;
+    const seqStr = String(nextNum).padStart(2, "0");
 
-    return `${carCode}${String(nextNum).padStart(2, '0')}`;
+    return `${carCode}${colorCode}${dateStr}${seqStr}`;
 }
+
 
 function autoRefreshBarcode() { 
     if(currentMode === 'buy') {
