@@ -170,33 +170,39 @@
     </div>
 
     <script>
-        const COST_MAP = { "J寄賣款(8)": 9000, "J寄賣款/車": 7500, "G青春版(8)": 5980, "Q特惠版": 5000, "W高配版": 5335, "Q特惠X防盜": 4000, "8AH": 0, "20AH": 1650, "30AH": 1970, "兒童座椅": 500, "定時器": 90, "水杯架": 70, "雙杯手機架": 155, "後照鏡2長": 75, "後座靠背": 100, "後腳踏/塑": 80, "後腳踏/鐵": 60, "維修服務": 0 };
-        const KEY = "YUCHILL_DB_V71";
-        
-        let db = JSON.parse(localStorage.getItem(KEY)) || { 
-            stock: { "J寄賣款(8)":0, "J寄賣款/車":0, "G青春版(8)":0, "Q特惠版":0, "W高配版":0, "Q特惠X防盜":0, "8AH":0, "20AH":0, "30AH":0, "兒童座椅":0, "定時器":0, "水杯架":0, "雙杯手機架":0, "後照鏡2長":0, "後座靠背":0, "後腳踏/塑":0, "後腳踏/鐵":0 }, 
-            logs: [],
-            withdraws: [] 
-        };
-        let currentMode = 'sell';
+const COST_MAP = { 
+    "J寄賣款(8)": 9000, "J寄賣款/車": 7500, "G青春版(8)": 5980, "Q特惠版": 5000,
+    "W高配版": 5335, "Q特惠X防盜": 4000, "8AH": 0, "20AH": 1650, "30AH": 1970,
+    "兒童座椅": 500, "定時器": 90, "水杯架": 70, "雙杯手機架": 155, "後照鏡2長": 75,
+    "後座靠背": 100, "後腳踏/塑": 80, "後腳踏/鐵": 60, "維修服務": 0 
+};
+const KEY = "YUCHILL_DB_V101";
 
-        function switchTab(t) {
-            document.getElementById('page-main').style.display = t === 'main' ? 'block' : 'none';
-            document.getElementById('page-report').style.display = t === 'report' ? 'block' : 'none';
-            document.getElementById('tab-main').className = t === 'main' ? "flex-1 py-3 rounded-xl font-black transition-all bg-white shadow-sm" : "flex-1 py-3 rounded-xl font-black text-slate-500 transition-all";
-            document.getElementById('tab-report').className = t === 'report' ? "flex-1 py-3 rounded-xl font-black transition-all bg-white shadow-sm" : "flex-1 py-3 rounded-xl font-black text-slate-500 transition-all";
-            if(t === 'report') renderFinance();
-        }
+let db = JSON.parse(localStorage.getItem(KEY)) || { 
+    stock: { "J寄賣款(8)":0, "J寄賣款/車":0, "G青春版(8)":0, "Q特惠版":0, "W高配版":0, "Q特惠X防盜":0, "8AH":0, "20AH":0, "30AH":0, "兒童座椅":0, "定時器":0, "水杯架":0, "雙杯手機架":0, "後照鏡2長":0, "後座靠背":0, "後腳踏/塑":0, "後腳踏/鐵":0 }, 
+    logs: [],
+    withdraws: [] 
+};
+let currentMode = 'sell';
+let html5QrCode = null;
 
-        function setMode(m) {
-            currentMode = m;
-            document.getElementById('m-sell').className = (m==='sell'?'bg-white text-indigo-600 shadow-sm ':'text-slate-400 ') + 'flex-1 py-4 rounded-xl font-black';
-            document.getElementById('m-buy').className = (m==='buy'?'bg-white text-orange-600 shadow-sm ':'text-slate-400 ') + 'flex-1 py-4 rounded-xl font-black';
-            document.getElementById('buy-qty-area').classList.toggle('hidden', m!=='buy');
-            resetForm(); 
-        }
+function switchTab(t) {
+    document.getElementById('page-main').style.display = t === 'main' ? 'block' : 'none';
+    document.getElementById('page-report').style.display = t === 'report' ? 'block' : 'none';
+    document.getElementById('tab-main').className = t === 'main' ? "flex-1 py-3 rounded-xl font-black transition-all bg-white shadow-sm" : "flex-1 py-3 rounded-xl font-black text-slate-500 transition-all";
+    document.getElementById('tab-report').className = t === 'report' ? "flex-1 py-3 rounded-xl font-black transition-all bg-white shadow-sm" : "flex-1 py-3 rounded-xl font-black text-slate-500 transition-all";
+    if(t === 'report') renderFinance();
+}
 
-        function generateNextBarcode(offset = 0) {
+function setMode(m) {
+    currentMode = m;
+    document.getElementById('m-sell').className = (m==='sell'?'bg-white text-indigo-600 shadow-sm ':'text-slate-400 ') + 'flex-1 py-4 rounded-xl font-black';
+    document.getElementById('m-buy').className = (m==='buy'?'bg-white text-orange-600 shadow-sm ':'text-slate-400 ') + 'flex-1 py-4 rounded-xl font-black';
+    document.getElementById('buy-qty-area').classList.toggle('hidden', m!=='buy');
+    resetForm(); 
+}
+
+function generateNextBarcode(offset = 0) {
     const carEl = document.getElementById('f-car-type');
     const carCode = carEl.options[carEl.selectedIndex]?.dataset.code;
     const colorCode = document.getElementById('f-color').value || "0";
@@ -204,208 +210,178 @@
     if(!carCode || !dateStr) return "";
     const shortDate = dateStr.replace(/-/g, '').substring(2);
 
-    // 找出同車組、同顏色、同日期的歷史最大流水號
-    const matchedLogs = db.logs.filter(l => 
-        !l.void && l.barcode && l.barcode.startsWith(carCode + colorCode + shortDate)
-    );
-
+    const matchedLogs = db.logs.filter(l => !l.void && l.barcode && l.barcode.startsWith(carCode + colorCode + shortDate));
     let maxNum = 0;
     if (matchedLogs.length > 0) {
         const nums = matchedLogs.map(l => parseInt(l.barcode.slice(-2))).filter(n => !isNaN(n));
         if(nums.length > 0) maxNum = Math.max(...nums);
     }
-
     return `${carCode}${colorCode}${shortDate}${(maxNum + 1 + offset).toString().padStart(2, '0')}`;
 }
 
-
-        function autoRefreshBarcode() { 
-            if(currentMode === 'buy') {
-                const newCode = generateNextBarcode();
-                if(newCode) document.getElementById('f-barcode').value = newCode;
-            }
-        }
-
-        function doSave() {
-            const dateVal = document.getElementById('f-date').value;
-            if(!dateVal) return alert("請選擇日期");
-            
-            const qty = currentMode === 'buy' ? (parseInt(document.getElementById('f-qty').value) || 1) : 1;
-            const carName = document.getElementById('f-car-type').value || "維修項目";
-            const batt = document.getElementById('f-batt').value;
-
-            for(let i = 0; i < qty; i++) {  // <-- 一定要迴圈
-            let codeToUse = currentMode === 'buy' 
-    ? generateNextBarcode(i) 
-    : (document.getElementById('f-barcode').value.toUpperCase() || "MANUAL");
-                if(!codeToUse) codeToUse = currentMode === 'buy' ? generateNextBarcode() : "MANUAL";
-
-                const entry = {
-                    date: dateVal, carName, barcode: codeToUse,
-                    vin: document.getElementById('f-vin').value, motor: document.getElementById('f-motor').value,
-                    type: currentMode, void: false,
-                    cash: i===0 ? (parseInt(document.getElementById('f-cash').value)||0) : 0,
-                    bank: i===0 ? (parseInt(document.getElementById('f-bank').value)||0) : 0,
-                    batt, ps: [] 
-                };
-                
-                db.logs.unshift(entry);
-                const mod = (currentMode === 'sell' ? -1 : 1);
-                if(db.stock[carName] !== undefined) db.stock[carName] += mod;
-                if(batt && db.stock[batt] !== undefined) db.stock[batt] += mod;
-            }
-            localStorage.setItem(KEY, JSON.stringify(db));
-            render(); resetForm(); alert(`成功儲存 ${qty} 筆`);
-        }
-
-        function resetForm() {
-            document.getElementById('main-form').reset();
-            document.getElementById('f-date').valueAsDate = new Date();
-            document.getElementById('f-barcode').style.backgroundColor = "";
-            autoRefreshBarcode();
-        }
-
-        function render() {
-            document.getElementById('stk-grid').innerHTML = Object.entries(db.stock).map(([k,v]) => `<div class="bg-white p-4 rounded-2xl border text-center shadow-sm"><div class="text-[10px] font-black text-slate-300 truncate mb-1">${k}</div><div class="text-xl font-black ${v<=0?'text-slate-200':'text-indigo-600'}">${v}</div></div>`).join('');
-            document.getElementById('log-list').innerHTML = db.logs.map((l, idx) => `
-                <tr class="${l.void?'opacity-30 line-through':''}">
-                    <td class="p-6">
-                        <div class="text-[10px] text-slate-400 font-black mb-1">${l.date}</div>
-                        <div class="font-mono font-bold uppercase">${l.barcode}</div>
-                    </td>
-                    <td class="p-6">
-                        <div class="font-bold">${l.carName}</div>
-                        <div class="text-[10px] text-slate-400 font-mono">${l.vin||'無'} / ${l.motor||'無'}</div>
-                    </td>
-                    <td class="p-6 text-right font-black text-xl ${l.type==='buy'?'text-orange-500':'text-slate-950'}">${l.type==='buy'?'-':''}$${(l.cash+l.bank).toLocaleString()}</td>
-                    <td class="p-6 text-center"><button onclick="askUndo(${idx})" class="text-slate-300 text-2xl">×</button></td>
-                </tr>`).join('');
-        }
-
-        function askUndo(idx) {
-            if(confirm("確定刪除？")) {
-                const l = db.logs[idx];
-                const mod = (l.type === 'sell' ? 1 : -1);
-                if(db.stock[l.carName] !== undefined) db.stock[l.carName] += mod;
-                if(l.batt && db.stock[l.batt] !== undefined) db.stock[l.batt] += mod;
-                l.void = true;
-                localStorage.setItem(KEY, JSON.stringify(db));
-                render();
-            }
-        }
-
-        function renderFinance() {
-            let totalProfit = 0, stockCost = 0;
-            const activeLogs = db.logs.filter(l => !l.void && l.type === 'sell');
-            Object.entries(db.stock).forEach(([n, q]) => { if(q>0) stockCost += (q * (COST_MAP[n]||0)); });
-            const totalWithdrawn = db.withdraws.reduce((sum, w) => sum + w.amount, 0);
-
-            let html = `<h3 class="font-black text-xl mb-6">銷售利潤明細</h3><table class="w-full text-left"><thead><tr class="text-slate-400 text-sm border-b"><th class="pb-4">條碼</th><th class="pb-4">項目</th><th class="pb-4 text-right">利潤</th></tr></thead><tbody>`;
-            activeLogs.forEach(l => {
-                const income = (l.cash + l.bank);
-                const profit = income - (l.baseCost || 0);
-                totalProfit += profit;
-                html += `<tr class="border-b border-slate-50"><td class="py-4 font-mono text-xs">${l.barcode}</td><td class="py-4 font-bold text-sm">${l.carName}</td><td class="text-right font-black text-emerald-600">$${profit.toLocaleString()}</td></tr>`;
-            });
-            html += `</tbody></table>`;
-            document.getElementById('profit-table-area').innerHTML = html;
-
-            const reserveNeeded = Math.max(0, 100000 - stockCost);
-            const canWithdrawTotal = totalProfit - reserveNeeded;
-            const remainingWithdraw = canWithdrawTotal - totalWithdrawn;
-
-            document.getElementById('fin-assets').innerHTML = `
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border"><div class="text-xs font-black text-slate-400">總利潤</div><div class="text-2xl font-black">$${totalProfit.toLocaleString()}</div></div>
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border"><div class="text-xs font-black text-indigo-400">可提(扣預留)</div><div class="text-2xl font-black text-indigo-600">$${canWithdrawTotal.toLocaleString()}</div></div>
-                <div class="bg-emerald-500 p-6 rounded-[2rem] text-white shadow-xl"><div class="text-xs font-black opacity-80">剩餘可提餘額</div><div class="text-3xl font-black">$${remainingWithdraw.toLocaleString()}</div></div>
-            `;
-
-            document.getElementById('withdraw-list').innerHTML = db.withdraws.map((w, i) => `<div class="flex justify-between bg-slate-800 p-3 rounded-xl"><span>${w.date}</span><b>$${w.amount}</b></div>`).join('');
-        }
-
-        function addWithdraw() {
-            const amt = parseInt(document.getElementById('f-withdraw').value);
-            if(amt > 0) {
-                db.withdraws.unshift({ date: new Date().toLocaleDateString(), amount: amt });
-                localStorage.setItem(KEY, JSON.stringify(db));
-                renderFinance();
-            }
-        }
-
-        function exportData() {
-            const blob = new Blob([JSON.stringify(db, null, 2)], {type: "application/json"});
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = `YUCHILL_BACKUP.json`;
-            a.click();
-        }
-
-        let html5QrCode = null;
-
-        async function handleBarcodeScan() {
-            const wrapper = document.getElementById('qr-reader-wrapper');
-            wrapper.style.display = 'flex';
-            html5QrCode = new Html5Qrcode("reader");
-            
-            try {
-                await html5QrCode.start(
-                    { facingMode: "environment" }, 
-                    { fps: 10, qrbox: { width: 280, height: 180 } },
-                    (decodedText) => {
-                        document.getElementById('f-barcode').value = decodedText.toUpperCase();
-                        handleBarcodeInput(decodedText);
-                        stopScan();
-                    },
-                    (err) => {}
-                );
-            } catch (err) {
-                console.error("相機啟動失敗", err);
-                document.getElementById('barcodeFileInput').click();
-                wrapper.style.display = 'none';
-            }
-        }
-
-        function stopScan() {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    document.getElementById('qr-reader-wrapper').style.display = 'none';
-                });
-            } else {
-                document.getElementById('qr-reader-wrapper').style.display = 'none';
-            }
-        }
-
-        document.getElementById('barcodeFileInput').onchange = e => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const html5QrCodeStatic = new Html5Qrcode("reader");
-            html5QrCodeStatic.scanFile(file, true)
-                .then(decodedText => {
-                    document.getElementById('f-barcode').value = decodedText.toUpperCase();
-                    handleBarcodeInput(decodedText);
-                })
-                .catch(err => alert("無法辨識照片中的條碼"));
-        };
-
-        document.getElementById('f-date').valueAsDate = new Date();
-        render();
-
-        function clearAllData() {
-    if (confirm("確定要刪除所有歷史紀錄與庫存資料嗎？此動作無法復原！")) {
-        // 1. 清除所有的 localStorage 紀錄
-        localStorage.clear();
-        
-        // 2. 清除 Service Worker 的快取 (讓程式更新到最新版)
-        if ('caches' in window) {
-            caches.keys().then(names => {
-                for (let name of names) caches.delete(name);
-            });
-        }
-        
-        alert("資料已成功清除！程式將自動重新整理。");
-        location.reload(); // 重新整理頁面
+function autoRefreshBarcode() { 
+    if(currentMode === 'buy') {
+        const newCode = generateNextBarcode();
+        if(newCode) document.getElementById('f-barcode').value = newCode;
     }
 }
-    </script>
-</body>
-</html>
+
+function doSave() {
+    const dateVal = document.getElementById('f-date').value;
+    if(!dateVal) return alert("請選擇日期");
+    
+    const qty = currentMode === 'buy' ? (parseInt(document.getElementById('f-qty').value) || 1) : 1;
+    const carName = document.getElementById('f-car-type').value || "維修項目";
+    const batt = document.getElementById('f-batt').value;
+
+    for(let i = 0; i < qty; i++) {
+        let codeToUse = currentMode === 'buy' ? generateNextBarcode(i) : (document.getElementById('f-barcode').value.toUpperCase() || "MANUAL");
+        if(!codeToUse) codeToUse = currentMode === 'buy' ? generateNextBarcode() : "MANUAL";
+
+        const entry = {
+            date: dateVal, carName, barcode: codeToUse,
+            vin: document.getElementById('f-vin').value, motor: document.getElementById('f-motor').value,
+            type: currentMode, void: false,
+            cash: i===0 ? (parseInt(document.getElementById('f-cash').value)||0) : 0,
+            bank: i===0 ? (parseInt(document.getElementById('f-bank').value)||0) : 0,
+            batt, ps: [] 
+        };
+        db.logs.unshift(entry);
+
+        const mod = (currentMode === 'sell' ? -1 : 1);
+        if(db.stock[carName] !== undefined) db.stock[carName] += mod;
+        if(batt && db.stock[batt] !== undefined) db.stock[batt] += mod;
+    }
+    localStorage.setItem(KEY, JSON.stringify(db));
+    render(); 
+    resetForm(); 
+    alert(`成功儲存 ${qty} 筆`);
+}
+
+function resetForm() {
+    document.getElementById('main-form').reset();
+    document.getElementById('f-date').valueAsDate = new Date();
+    document.getElementById('f-barcode').style.backgroundColor = "";
+    autoRefreshBarcode();
+}
+
+function render() {
+    document.getElementById('stk-grid').innerHTML = Object.entries(db.stock)
+        .map(([k,v]) => `<div class="bg-white p-4 rounded-2xl border text-center shadow-sm">
+            <div class="text-[10px] font-black text-slate-300 truncate mb-1">${k}</div>
+            <div class="text-xl font-black ${v<=0?'text-slate-200':'text-indigo-600'}">${v}</div>
+        </div>`).join('');
+
+    document.getElementById('log-list').innerHTML = db.logs.map((l, idx) => `
+        <tr class="${l.void?'opacity-30 line-through':''}">
+            <td class="p-6">
+                <div class="text-[10px] text-slate-400 font-black mb-1">${l.date}</div>
+                <div class="font-mono font-bold uppercase">${l.barcode}</div>
+            </td>
+            <td class="p-6">
+                <div class="font-bold">${l.carName}</div>
+                <div class="text-[10px] text-slate-400 font-mono">${l.vin||'無'} / ${l.motor||'無'}</div>
+            </td>
+            <td class="p-6 text-right font-black text-xl ${l.type==='buy'?'text-orange-500':'text-slate-950'}">${l.type==='buy'?'-':''}$${(l.cash+l.bank).toLocaleString()}</td>
+            <td class="p-6 text-center"><button onclick="askUndo(${idx})" class="text-slate-300 text-2xl">×</button></td>
+        </tr>`).join('');
+}
+
+function askUndo(idx) {
+    if(confirm("確定刪除？")) {
+        const l = db.logs[idx];
+        const mod = (l.type === 'sell' ? 1 : -1);
+        if(db.stock[l.carName] !== undefined) db.stock[l.carName] += mod;
+        if(l.batt && db.stock[l.batt] !== undefined) db.stock[l.batt] += mod;
+        l.void = true;
+        localStorage.setItem(KEY, JSON.stringify(db));
+        render();
+    }
+}
+
+function renderFinance() {
+    let totalProfit = 0, stockCost = 0;
+    const activeLogs = db.logs.filter(l => !l.void && l.type === 'sell');
+    Object.entries(db.stock).forEach(([n, q]) => { if(q>0) stockCost += (q * (COST_MAP[n]||0)); });
+    const totalWithdrawn = db.withdraws.reduce((sum, w) => sum + w.amount, 0);
+
+    let html = `<h3 class="font-black text-xl mb-6">銷售利潤明細</h3><table class="w-full text-left"><thead><tr class="text-slate-400 text-sm border-b"><th class="pb-4">條碼</th><th class="pb-4">項目</th><th class="pb-4 text-right">利潤</th></tr></thead><tbody>`;
+    activeLogs.forEach(l => {
+        const income = (l.cash + l.bank);
+        const profit = income - (l.baseCost || 0);
+        totalProfit += profit;
+        html += `<tr class="border-b border-slate-50"><td class="py-4 font-mono text-xs">${l.barcode}</td><td class="py-4 font-bold text-sm">${l.carName}</td><td class="text-right font-black text-emerald-600">$${profit.toLocaleString()}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    document.getElementById('profit-table-area').innerHTML = html;
+
+    const reserveNeeded = Math.max(0, 100000 - stockCost);
+    const canWithdrawTotal = totalProfit - reserveNeeded;
+    const remainingWithdraw = canWithdrawTotal - totalWithdrawn;
+
+    document.getElementById('fin-assets').innerHTML = `
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border"><div class="text-xs font-black text-slate-400">總利潤</div><div class="text-2xl font-black">$${totalProfit.toLocaleString()}</div></div>
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border"><div class="text-xs font-black text-indigo-400">可提(扣預留)</div><div class="text-2xl font-black text-indigo-600">$${canWithdrawTotal.toLocaleString()}</div></div>
+        <div class="bg-emerald-500 p-6 rounded-[2rem] text-white shadow-xl"><div class="text-xs font-black opacity-80">剩餘可提餘額</div><div class="text-3xl font-black">$${remainingWithdraw.toLocaleString()}</div></div>
+    `;
+
+    document.getElementById('withdraw-list').innerHTML = db.withdraws.map((w, i) => `<div class="flex justify-between bg-slate-800 p-3 rounded-xl"><span>${w.date}</span><b>$${w.amount}</b></div>`).join('');
+}
+
+function addWithdraw() {
+    const amt = parseInt(document.getElementById('f-withdraw').value);
+    if(amt > 0) {
+        db.withdraws.unshift({ date: new Date().toLocaleDateString(), amount: amt });
+        localStorage.setItem(KEY, JSON.stringify(db));
+        renderFinance();
+    }
+}
+
+function exportData() {
+    const blob = new Blob([JSON.stringify(db, null, 2)], {type: "application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `YUCHILL_BACKUP.json`;
+    a.click();
+}
+
+async function handleBarcodeScan() {
+    const wrapper = document.getElementById('qr-reader-wrapper');
+    wrapper.style.display = 'flex';
+    html5QrCode = new Html5Qrcode("reader");
+    
+    try {
+        await html5QrCode.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: { width: 280, height: 180 } },
+            (decodedText) => {
+                document.getElementById('f-barcode').value = decodedText.toUpperCase();
+                handleBarcodeInput(decodedText);
+                stopScan();
+            },
+            (err) => {}
+        );
+    } catch (err) {
+        console.error("相機啟動失敗", err);
+        document.getElementById('barcodeFileInput').click();
+        wrapper.style.display = 'none';
+    }
+}
+
+function stopScan() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            document.getElementById('qr-reader-wrapper').style.display = 'none';
+        });
+    } else {
+        document.getElementById('qr-reader-wrapper').style.display = 'none';
+    }
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    resetForm();
+    render();
+    document.getElementById('f-barcode').addEventListener('input', (e) => handleBarcodeInput(e.target.value));
+});
+</script>
