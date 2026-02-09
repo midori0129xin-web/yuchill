@@ -8,33 +8,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://unpkg.com/html5-qrcode"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-    /* 掃描器浮層樣式 */
-    #qr-reader-wrapper {
-        display: none;
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.85);
-        z-index: 9999;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-    #reader {
-        width: 320px;
-        border-radius: 20px;
-        overflow: hidden;
-        background: #000;
-    }
-    .scan-close-btn {
-        margin-top: 20px;
-        padding: 12px 40px;
-        background: #ef4444;
-        color: white;
-        border-radius: 99px;
-        font-weight: 900;
-    }
+   /* 像 LINE 的全螢幕掃描器 */
+#qr-reader-wrapper {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 10000;
+    flex-direction: column;
+}
+
+#reader {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* 覆蓋插件內部樣式，隱藏不必要的按鈕 */
+#reader img { display: none !important; }
+#reader video { object-fit: cover !important; }
+
+/* 掃描線動畫 */
+.scan-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 280px; height: 180px;
+    border: 2px solid rgba(79, 70, 229, 0.5);
+    border-radius: 12px;
+    box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.scan-line {
+    position: absolute;
+    width: 100%; height: 2px;
+    background: #4f46e5;
+    box-shadow: 0 0 10px #4f46e5;
+    animation: scanMove 2s infinite;
+}
+
+@keyframes scanMove {
+    0% { top: 0; }
+    100% { top: 100%; }
+}
+
+.scan-ui-overlay {
+    position: absolute;
+    bottom: 40px; width: 100%;
+    text-align: center; z-index: 11;
+}
 </style>
 </head>
 <body class="pb-10">
@@ -76,33 +102,39 @@
                         <div class="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
                             <div class="flex flex-wrap gap-2" items-center>
                                     <div id="qr-reader-wrapper">
+                                            <div id="qr-reader-wrapper">
+                                                    
     <div id="reader"></div>
-    <button type="button" onclick="stopScan()" class="scan-close-btn">取消掃描</button>
+    <div class="scan-overlay">
+        <div class="scan-line"></div>
+    </div>
+    <div class="scan-ui-overlay">
+        <p class="text-white mb-6 font-bold">請將條碼對準框內</p>
+        <button onclick="stopScan()" class="bg-red-500 text-white px-10 py-4 rounded-full font-black shadow-lg">結束掃描</button>
+    </div>
 </div>
-    <input type="text" id="f-barcode"
-        oninput="handleBarcodeInput(this.value)"
-        placeholder="條碼區域"
-class="flex-1 max-w-[260px] p-4 rounded-xl font-black text-indigo-700 text-center uppercase bg-white border" >
-
-
-<!-- iOS 拍照掃描用（隱藏） -->
-<input type="file" id="barcodeFileInput" accept="image/*" capture="environment" style="display:none" />
-
-<div class="flex gap-2 mb-4">
-    <button type="button" 
-        onclick="generateNextBarcode()" 
-        class="bg-white px-4 py-3 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm">
-        🔄
-    </button>
-
-    <button type="button" 
-        onclick="handleBarcodeScan()" 
-        class="bg-white px-4 py-3 rounded-xl text-indigo-500 border border-indigo-200 shadow-sm flex-1">
-        📷 
-    </button>
+    
+    <div class="flex flex-col gap-2">
+    <label class="text-xs font-black text-indigo-400 ml-1">條碼編號</label>
+    <div class="flex gap-2">
+        <input type="text" id="f-barcode" 
+               oninput="handleBarcodeInput(this.value)"
+               placeholder="條碼內容" 
+               class="flex-1 p-4 rounded-2xl font-black text-indigo-700 text-center uppercase bg-white border border-indigo-100 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500">
+        
+        <button type="button" onclick="generateNextBarcode()" 
+                class="bg-white px-5 py-4 rounded-2xl text-indigo-500 border border-indigo-100 shadow-sm hover:bg-indigo-50 transition">
+            🔄
+        </button>
+        
+        <button type="button" onclick="handleBarcodeScan()" 
+                class="bg-indigo-600 px-6 py-4 rounded-2xl text-white shadow-lg hover:bg-indigo-700 transition flex items-center gap-2">
+            <span class="text-xl">📷</span>
+            <span class="font-bold">掃描</span>
+        </button>
+    </div>
 </div>
-
-</div>
+                                            
                             <div class="grid grid-cols-2 gap-2">
                                 <select id="f-car-type" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border">
                                     <option value="">- 車組 -</option>
@@ -473,30 +505,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const barcodeInput = document.getElementById('f-barcode');
-    const originalVal = barcodeInput.value;
-    barcodeInput.value = "讀取中...";
-
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        // 使用 Quagga 進行離線辨識，不依賴系統 API
-                Quagga.decodeSingle({
-            src: event.target.result,
-            inputStream: { size: 1200 }, // 在這裡增加這行
-            decoder: {
-                readers: ["code_128_reader", "code_39_reader"] 
-            },
-            locate: true // 也建議加上這行，增加掃描精準度
-        }, function(result) {
-            if(result && result.codeResult) {
-                const code = result.codeResult.code.toUpperCase().trim();barcodeInput.value = code;
-            if(typeof handleBarcodeInput === 'function'){handleBarcodeInput(code); }} else {
-                alert("❌ 辨識失敗：請確保條碼清晰、橫向拍攝。");
-              barcodeInput.value = originalVal;
-            }
-        });
-    };
-    reader.readAsDataURL(file);
 };
 });
 
