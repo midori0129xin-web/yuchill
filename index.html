@@ -250,10 +250,13 @@ function doSave() {
     try {
         const dateVal = document.getElementById('f-date').value;
         if(!dateVal) return alert("請選擇日期");
-        const carName = document.getElementById('f-car-type').value || "";
-        if(currentMode==='buy' && !carName) return alert("請選擇車組"); // 車組防呆
+
+        // carName 防呆 & 預設
+        let carName = document.getElementById('f-car-type').value;
+        if(currentMode==='buy' && !carName) return alert("請選擇車組");
+        if(!carName) carName = "維修項目";
+
         const qty = currentMode === 'buy' ? (parseInt(document.getElementById('f-qty').value)||1) : 1;
-        const carName = document.getElementById('f-car-type').value || "維修項目";
         const batt = document.getElementById('f-batt').value;
         const tempUsed = new Set();
 
@@ -289,6 +292,7 @@ function doSave() {
         alert("儲存失敗，請查看 Console");
     }
 }
+
 
 // ----- 重置 -----
 function resetForm(){
