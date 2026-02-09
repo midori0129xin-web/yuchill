@@ -38,10 +38,6 @@
 </style>
 </head>
 <body class="pb-10">
-<div id="qr-reader-wrapper">
-    <div id="reader"></div>
-    <button type="button" onclick="stopScan()" class="scan-close-btn">取消掃描</button>
-</div>
         
     <nav class="bg-white border-b sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto p-3 sm:p-4 mt-3 sm:mt-6">
@@ -79,6 +75,10 @@
                         </div>
                         <div class="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 space-y-4">
                             <div class="flex flex-wrap gap-2" items-center>
+                                    <div id="qr-reader-wrapper">
+    <div id="reader"></div>
+    <button type="button" onclick="stopScan()" class="scan-close-btn">取消掃描</button>
+</div>
     <input type="text" id="f-barcode"
         oninput="handleBarcodeInput(this.value)"
         placeholder="條碼區域"
