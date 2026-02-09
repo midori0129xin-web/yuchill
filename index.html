@@ -229,10 +229,12 @@
         function doSave() {
             const dateVal = document.getElementById('f-date').value;
             if(!dateVal) return alert("請選擇日期");
+            
             const qty = currentMode === 'buy' ? (parseInt(document.getElementById('f-qty').value) || 1) : 1;
             const carName = document.getElementById('f-car-type').value || "維修項目";
             const batt = document.getElementById('f-batt').value;
 
+            for(let i = 0; i < qty; i++) {  // <-- 一定要迴圈
             let codeToUse = currentMode === 'buy' 
     ? generateNextBarcode(i) 
     : (document.getElementById('f-barcode').value.toUpperCase() || "MANUAL");
