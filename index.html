@@ -292,45 +292,49 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfg9eJzk6J2-v_X5L1_9BFYo90TVpSpn30MCYSKxZqSuN-yj0PTWvE6mX-FDCfMTCg/exec"; 
 
 // 功能一：備份資料到 Google 試算表 (取代匯出)
-async function syncToCloud() {
-    // 關鍵修正：確保讀取的 Key 跟儲存時一模一樣
-    const dataRaw = localStorage.getItem(KEY); // 使用你程式碼定義的 KEY (YUCHILL_DB_V101)
-    const db = JSON.parse(dataRaw || '[]');
+async function syncToCloud(btnEl) {
+    const dataRaw = localStorage.getItem(KEY);
+    if (!dataRaw) return alert("目前沒有任何資料");
 
-    if (!db || db.length === 0) {
-        return alert("目前沒有紀錄可以備份！(請確認是否已新增資料)");
+    const localDb = JSON.parse(dataRaw);
+
+    if (!localDb.logs || localDb.logs.length === 0) {
+        return alert("目前沒有紀錄可以備份！");
     }
 
-    const btn = event.currentTarget;
+    const btn = btnEl;
     const originalText = btn.innerHTML;
-    btn.innerHTML = "<span>⌛ 同步中...</span>";
+    btn.innerHTML = "⌛ 同步中...";
     btn.disabled = true;
 
     try {
-        // 使用 POST 將整份 localStorage 傳送到試算表
         await fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors', // 解決跨網域問題
-            body: JSON.stringify({ type: 'SYNC_ALL', data: currentDb.logs })
+            mode: 'no-cors',
+            body: JSON.stringify({
+                type: 'SYNC_ALL',
+                data: localDb.logs
+            })
         });
-        
-        alert('✅ 已備份至 Google 試算表！\n手機與電腦現在可以同步了。');
-    } catch (error) {
-        console.error(error);
-        alert('❌ 備份失敗，請檢查網路或 API 設定');
+
+        alert('✅ 已備份至 Google 試算表');
+    } catch (e) {
+        console.error(e);
+        alert('❌ 備份失敗');
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
 
-// 功能二：從 Google 試算表抓回資料 (取代匯入)
-async function loadFromCloud() {
-    if (!confirm("⚠️ 確定要從雲端同步嗎？\n這會把此裝置目前的紀錄「替換」成雲端上的資料。")) return;
 
-    const btn = event.currentTarget;
+// 功能二：從 Google 試算表抓回資料 (取代匯入)
+async function loadFromCloud(btnEl) {
+    if (!confirm("⚠️ 確定要從雲端同步嗎？\n這會覆蓋本機資料")) return;
+
+    const btn = btnEl;
     const originalText = btn.innerHTML;
-    btn.innerHTML = "<span>⌛ 讀取中...</span>";
+    btn.innerHTML = "⌛ 讀取中...";
 
     try {
         const response = await fetch(SCRIPT_URL);
@@ -347,23 +351,24 @@ async function loadFromCloud() {
             // 2. 將雲端表格資料轉回程式用的 logs 格式，並同步計算庫存
             cloudRows.forEach(row => {
                 const entry = {
-                    date: row.date,
-                    barcode: row.barcode,
-                    carName: row.name,
-                    category: row.category, // 雖然你目前的存檔沒用到，但保留擴充性
-                    qty: parseInt(row.qty) || 0,
-                    type: row.action === "買入" ? "buy" : "sell",
-                    cash: row.action === "賣出" ? (parseInt(row.qty)*1000) : 0, // 這裡僅為範例，視你需求調整
-                    bank: 0,
-                    void: false
-                };
+    date: row.date,
+    barcode: row.barcode,
+    carName: row.name,
+    type: row.action === "買入" ? "buy" : "sell",
+    cash: parseInt(row.cash) || 0,
+    bank: parseInt(row.bank) || 0,
+    vin: row.vin || "",
+    motor: row.motor || "",
+    batt: row.batt || "",
+    void: false
+};
+
                 
                 newDb.logs.push(entry);
 
-                // 計算庫存回填
-                const mod = (entry.type === 'sell' ? -1 : 1);
-                if(newDb.stock[entry.carName] !== undefined) {
-                    newDb.stock[entry.carName] += (entry.qty * mod);
+const mod = entry.type === 'sell' ? -1 : 1;
+if (newDb.stock[entry.carName] !== undefined) newDb.stock[entry.carName] += mod;
+if (entry.batt && newDb.stock[entry.batt] !== undefined) newDb.stock[entry.batt] += mod;
                 }
             });
 
