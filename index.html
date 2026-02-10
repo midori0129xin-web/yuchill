@@ -121,7 +121,7 @@
                                     <option value="">- 車組 -</option>
                                     <option data-code="J">J寄賣款(8)</option><option data-code="J">J寄賣款/車</option><option data-code="G">G青春版(8)</option>
                                     <option data-code="Q">Q特惠版</option><option data-code="W">W高配版</option><option data-code="QX">Q特惠X防盜</option>
-                                    <option data-code="S" value="拆修/服務">拆修/服務</option>
+                                    <option data-code="S" value="維修服務">維修服務</option>
                                 </select>
                                 <select id="f-color" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border border-slate-200">
                                     <option value="">- 顏色 -</option>
@@ -291,105 +291,65 @@
 // ⚠️ 請務必換成你部署 Google Apps Script 後得到的網址
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfg9eJzk6J2-v_X5L1_9BFYo90TVpSpn30MCYSKxZqSuN-yj0PTWvE6mX-FDCfMTCg/exec"; 
 
-// 功能一：備份資料到 Google 試算表 (取代匯出)
-async function syncToCloud(btnEl) {
-    const dataRaw = localStorage.getItem(KEY);
-    if (!dataRaw) return alert("目前沒有任何資料");
+// 功能一：☁️ 備份
+async function syncToCloud() {
+    const history = JSON.parse(localStorage.getItem('YUCHILL_DB_V101') || '[]');
+    if (history.length === 0) return alert("目前沒有紀錄可以備份");
 
-    const localDb = JSON.parse(dataRaw);
-
-    if (!localDb.logs || localDb.logs.length === 0) {
-        return alert("目前沒有紀錄可以備份！");
-    }
-
-    const btn = btnEl;
+    const btn = event.currentTarget;
     const originalText = btn.innerHTML;
-    btn.innerHTML = "⌛ 同步中...";
+    btn.innerHTML = "<span>⌛ 同步中...</span>";
     btn.disabled = true;
 
     try {
+        // 使用 POST 將整份 localStorage 傳送到試算表
         await fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({
-                type: 'SYNC_ALL',
-                data: localDb.logs
-            })
+            mode: 'no-cors', // 解決跨網域問題
+            body: JSON.stringify({ type: 'SYNC_ALL', data: history })
         });
-
-        alert('✅ 已備份至 Google 試算表');
-    } catch (e) {
-        console.error(e);
-        alert('❌ 備份失敗');
+        
+        alert('✅ 已備份至 Google 試算表！\n手機與電腦現在可以同步了。');
+    } catch (error) {
+        console.error(error);
+        alert('❌ 備份失敗，請檢查網路或 API 設定');
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
 
+// 功能二：📥 還原
+async function loadFromCloud() {
+    if (!confirm("⚠️ 確定要從雲端同步嗎？\n這會把這台裝置目前的紀錄「替換」成雲端上的資料。")) return;
 
-// 功能二：從 Google 試算表抓回資料 (取代匯入)
-async function loadFromCloud(btnEl) {
-    if (!confirm("⚠️ 確定要從雲端同步嗎？\n這會覆蓋本機資料")) return;
-
-    const btn = btnEl;
+    const btn = event.currentTarget;
     const originalText = btn.innerHTML;
-    btn.innerHTML = "⌛ 讀取中...";
+    btn.innerHTML = "<span>⌛ 讀取中...</span>";
 
     try {
         const response = await fetch(SCRIPT_URL);
-        const cloudRows = await response.json(); // 這是從試算表抓回來的陣列
+        const cloudData = await response.json();
 
-        if (cloudRows && cloudRows.length > 0) {
-            // 1. 初始化一個乾淨的資料結構
-            let newDb = { 
-                stock: { "J寄賣款(8)":0, "J寄賣款/車":0, "G青春版(8)":0, "Q特惠版":0, "W高配版":0, "Q特惠X防盜":0, "8AH":0, "20AH":0, "30AH":0, "兒童座椅":0, "定時器":0, "水杯架":0, "雙杯手機架":0, "後照鏡2長":0, "後座靠背":0, "後腳踏/塑":0, "後腳踏/鐵":0 }, 
-                logs: [],
-                withdraws: [] 
-            };
-
-            // 2. 將雲端表格資料轉回程式用的 logs 格式，並同步計算庫存
-            cloudRows.forEach(row => {
-                const entry = {
-    date: row.date,
-    barcode: row.barcode,
-    carName: row.name,
-    type: row.action === "買入" ? "buy" : "sell",
-    cash: parseInt(row.cash) || 0,
-    bank: parseInt(row.bank) || 0,
-    vin: row.vin || "",
-    motor: row.motor || "",
-    batt: row.batt || "",
-    void: false
-};
-
-                
-                newDb.logs.push(entry);
-
-const mod = entry.type === 'sell' ? -1 : 1;
-if (newDb.stock[entry.carName] !== undefined) newDb.stock[entry.carName] += mod;
-if (entry.batt && newDb.stock[entry.batt] !== undefined) newDb.stock[entry.batt] += mod;
-                }
-            });
-
-            // 3. 覆蓋本地資料
-            localStorage.setItem(KEY, JSON.stringify(newDb));
+        if (cloudData && cloudData.length > 0) {
+            // 直接取代本地的 LocalStorage
+            localStorage.setItem('YUCHILL_DB_V101', JSON.stringify(cloudData));
             
-            // 4. 更新全域變數 db 並重新渲染畫面
-            db = newDb; 
-            render();
+            // 重新執行你原本的渲染函數，讓畫面更新
+            if (typeof render === "function") render(); 
             
-            alert(`✅ 同步成功！已載入 ${cloudRows.length} 筆紀錄並更新庫存。`);
+            alert('✅ 同步成功！已載入 ' + cloudData.length + ' 筆最新紀錄。');
         } else {
             alert('查無雲端資料');
         }
     } catch (error) {
-        console.error("同步錯誤:", error);
-        alert('❌ 讀取失敗，請確認網址是否正確或腳本已部署');
+        console.error(error);
+        alert('❌ 讀取失敗，請確認 Google 腳本是否已正確部署');
     } finally {
         btn.innerHTML = originalText;
     }
 }
+
 
         function resetForm() {
             document.getElementById('main-form').reset();
