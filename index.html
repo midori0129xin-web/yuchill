@@ -57,10 +57,10 @@
         <div class="max-w-7xl mx-auto p-4 flex justify-between items-center">
             <h1 class="font-black text-2xl italic">YUCHILL <span class="text-indigo-600 text-sm">5207418</span></h1>
             <div class="grid grid-cols-2 gap-2">
-    <button onclick="syncToCloud()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center">
+    <button onclick="syncToCloud(event)" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center">
         ☁️ 備份至雲端
     </button>
-    <button onclick="loadFromCloud()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center">
+    <button onclick="loadFromCloud(event)" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center">
         📥 從雲端同步
     </button>
 </div>
@@ -289,29 +289,35 @@
 }
 
 // ⚠️ 請務必換成你部署 Google Apps Script 後得到的網址
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfg9eJzk6J2-v_X5L1_9BFYo90TVpSpn30MCYSKxZqSuN-yj0PTWvE6mX-FDCfMTCg/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOh-uto0rIDdsaI20BJlZa8gBKXQH-T7uGu5h0TiqHGvwDH5YapXdS5EVGXGfMgM74/exec"; 
 
 // 功能一：☁️ 備份
-async function syncToCloud() {
-    const history = JSON.parse(localStorage.getItem('YUCHILL_DB_V101') || '[]');
-    if (history.length === 0) return alert("目前沒有紀錄可以備份");
+async function syncToCloud(e) {
+    // 檢查是否有交易紀錄 (修正原本 history.length 的錯誤)
+    if (!db || db.logs.length === 0) {
+        return alert("目前沒有紀錄可以備份");
+    }
 
-    const btn = event.currentTarget;
+    // 取得按鈕並顯示讀取中狀態
+    const btn = e ? e.currentTarget : event.currentTarget;
     const originalText = btn.innerHTML;
     btn.innerHTML = "<span>⌛ 同步中...</span>";
     btn.disabled = true;
 
     try {
-        // 使用 POST 將整份 localStorage 傳送到試算表
+        // 直接將全域變數 db (包含庫存與紀錄) 傳送到雲端
         await fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors', // 解決跨網域問題
-            body: JSON.stringify({ type: 'SYNC_ALL', data: history })
+            mode: 'no-cors', 
+            body: JSON.stringify({ 
+                type: 'SYNC_ALL', 
+                data: db 
+            })
         });
         
         alert('✅ 已備份至 Google 試算表！\n手機與電腦現在可以同步了。');
     } catch (error) {
-        console.error(error);
+        console.error("備份失敗:", error);
         alert('❌ 備份失敗，請檢查網路或 API 設定');
     } finally {
         btn.innerHTML = originalText;
@@ -320,10 +326,10 @@ async function syncToCloud() {
 }
 
 // 功能二：📥 還原
-async function loadFromCloud() {
+async function loadFromCloud(e) {
     if (!confirm("⚠️ 確定要從雲端同步嗎？\n這會把這台裝置目前的紀錄「替換」成雲端上的資料。")) return;
 
-    const btn = event.currentTarget;
+    const btn = e ? e.currentTarget : event.currentTarget;
     const originalText = btn.innerHTML;
     btn.innerHTML = "<span>⌛ 讀取中...</span>";
 
@@ -331,20 +337,23 @@ async function loadFromCloud() {
         const response = await fetch(SCRIPT_URL);
         const cloudData = await response.json();
 
-        if (cloudData && cloudData.length > 0) {
-            // 直接取代本地的 LocalStorage
-            localStorage.setItem('YUCHILL_DB_V101', JSON.stringify(cloudData));
+        // 檢查雲端回傳的是否為有效的資料物件
+        if (cloudData && (cloudData.logs || cloudData.stock)) {
+            // 關鍵修正：同時更新記憶體中的變數 db 與硬碟中的存檔
+            db = cloudData; 
+            localStorage.setItem(KEY, JSON.stringify(db));
             
-            // 重新執行你原本的渲染函數，讓畫面更新
-            if (typeof render === "function") render(); 
+            // 重新執行渲染函數，讓畫面立刻更新成雲端資料
+            render(); 
+            if (typeof renderFinance === "function") renderFinance();
             
-            alert('✅ 同步成功！已載入 ' + cloudData.length + ' 筆最新紀錄。');
+            alert('✅ 同步成功！已載入最新紀錄。');
         } else {
             alert('查無雲端資料');
         }
     } catch (error) {
-        console.error(error);
-        alert('❌ 讀取失敗，請確認 Google 腳本是否已正確部署');
+        console.error("同步失敗:", error);
+        alert('❌ 讀取失敗，請確認 Google 腳本是否已正確部署並設為「所有人」');
     } finally {
         btn.innerHTML = originalText;
     }
