@@ -218,7 +218,7 @@
     const matchedLogs = db.logs.filter(l => 
         !l.void && 
         l.barcode && 
-        l.barcode.startsWith(carCode)
+        l.barcode.charAt(0).toUpperCase() === carCode.charAt(0).toUpperCase()
     );
 
     let maxNum = 0;
