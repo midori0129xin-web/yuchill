@@ -132,7 +132,7 @@
                                 <input type="text" id="f-vin" placeholder="車架號" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200">
                                 <input type="text" id="f-motor" placeholder="電機號" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200">
                                 <input type="text" id="f-phone" placeholder="客戶電話" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200">
-                                <textarea id="f-note" placeholder="客戶備註" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200"></textarea>
+                                <input type="text" id="f-note" placeholder="客戶備註" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200">
                             </div>
                             <select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border border-slate-200">
                                 <option value="">- 電池 -</option><option>8AH</option><option>20AH</option><option>30AH</option>
@@ -340,7 +340,10 @@ if (!localStorage.getItem(KEY)) {
 
         const entry = {
             date: dateVal, carName, barcode: codeToUse,
-            vin: document.getElementById('f-vin').value, motor: document.getElementById('f-motor').value,
+            vin: document.getElementById('f-vin').value, 
+            motor: document.getElementById('f-motor').value, 
+            phone: document.getElementById('f-phone').value, 
+            note: document.getElementById('f-note').value, 
             type: currentMode, void: false,
             cash: i===0 ? (parseInt(document.getElementById('f-cash').value)||0) : 0,
             bank: i===0 ? (parseInt(document.getElementById('f-bank').value)||0) : 0,
