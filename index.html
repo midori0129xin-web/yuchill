@@ -257,11 +257,6 @@ if (!localStorage.getItem(KEY)) {
                     }
                 });
             }
-            localStorage.setItem(KEY, JSON.stringify(parsedData));
-            break;
-        }
-    }
-}
             // -------------------------------------
             localStorage.setItem(KEY, oldData);
             console.log("資料已從", oldKey, "升級到", KEY);
