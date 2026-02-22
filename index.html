@@ -131,11 +131,63 @@
                             <div class="flex flex-col gap-2">
                                 <input type="text" id="f-vin" placeholder="車架號" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200">
                                 <input type="text" id="f-motor" placeholder="電機號" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200">
+                                <input type="text" id="f-phone" placeholder="客戶電話" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200">
+                                <textarea id="f-note" placeholder="客戶備註" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200"></textarea>
                             </div>
                             <select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border border-slate-200">
                                 <option value="">- 電池 -</option><option>8AH</option><option>20AH</option><option>30AH</option>
                             </select>
                         </div>
+                        <!-- 配件區（四欄下拉） -->
+<div class="grid grid-cols-2 gap-3 mt-3">
+    <select class="f-acc p-4 rounded-xl font-bold bg-white border border-slate-200">
+        <option value="">- 配件1 -</option>
+        <option>兒童座椅</option>
+        <option>定時器</option>
+        <option>水杯架</option>
+        <option>雙杯手機架</option>
+        <option>後照鏡2長</option>
+        <option>後座靠背</option>
+        <option>後腳踏/塑</option>
+        <option>後腳踏/鐵</option>
+    </select>
+
+    <select class="f-acc p-4 rounded-xl font-bold bg-white border border-slate-200">
+        <option value="">- 配件2 -</option>
+        <option>兒童座椅</option>
+        <option>定時器</option>
+        <option>水杯架</option>
+        <option>雙杯手機架</option>
+        <option>後照鏡2長</option>
+        <option>後座靠背</option>
+        <option>後腳踏/塑</option>
+        <option>後腳踏/鐵</option>
+    </select>
+
+    <select class="f-acc p-4 rounded-xl font-bold bg-white border border-slate-200">
+        <option value="">- 配件3 -</option>
+        <option>兒童座椅</option>
+        <option>定時器</option>
+        <option>水杯架</option>
+        <option>雙杯手機架</option>
+        <option>後照鏡2長</option>
+        <option>後座靠背</option>
+        <option>後腳踏/塑</option>
+        <option>後腳踏/鐵</option>
+    </select>
+
+    <select class="f-acc p-4 rounded-xl font-bold bg-white border border-slate-200">
+        <option value="">- 配件4 -</option>
+        <option>兒童座椅</option>
+        <option>定時器</option>
+        <option>水杯架</option>
+        <option>雙杯手機架</option>
+        <option>後照鏡2長</option>
+        <option>後座靠背</option>
+        <option>後腳踏/塑</option>
+        <option>後腳踏/鐵</option>
+    </select>
+</div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <input type="number" id="f-cash" inputmode="numeric" placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border border-amber-100">
@@ -179,7 +231,22 @@
 
     <script>
         const COST_MAP = { "J寄賣款(8)": 9000, "J寄賣款/車": 7500, "G青春版(8)": 5980, "Q特惠版": 5000, "W高配版": 5335, "Q特惠X防盜": 4000, "8AH": 0, "20AH": 1650, "30AH": 1970, "兒童座椅": 500, "定時器": 90, "水杯架": 70, "雙杯手機架": 155, "後照鏡2長": 75, "後座靠背": 100, "後腳踏/塑": 80, "後腳踏/鐵": 60, "維修服務": 0 };
-        const KEY = "YUCHILL_DB_V101";
+        const DB_VERSION = 102;
+const KEY = `YUCHILL_DB_V${DB_VERSION}`;
+const PREVIOUS_VERSIONS = ["YUCHILL_DB_V101"];
+
+// 自動升級舊版本資料
+if (!localStorage.getItem(KEY)) {
+    for (const oldKey of PREVIOUS_VERSIONS) {
+        const oldData = localStorage.getItem(oldKey);
+        if (oldData) {
+            localStorage.setItem(KEY, oldData);
+            console.log("資料已從", oldKey, "升級到", KEY);
+            break;
+        }
+    }
+}
+
         
         let db = JSON.parse(localStorage.getItem(KEY)) || { 
             stock: { "J寄賣款(8)":0, "J寄賣款/車":0, "G青春版(8)":0, "Q特惠版":0, "W高配版":0, "Q特惠X防盜":0, "8AH":0, "20AH":0, "30AH":0, "兒童座椅":0, "定時器":0, "水杯架":0, "雙杯手機架":0, "後照鏡2長":0, "後座靠背":0, "後腳踏/塑":0, "後腳踏/鐵":0 }, 
@@ -261,6 +328,9 @@
     const qty = currentMode === 'buy' ? (parseInt(document.getElementById('f-qty').value) || 1) : 1;
     const carName = document.getElementById('f-car-type').value || "維修項目";
     const batt = document.getElementById('f-batt').value;
+    const accList = Array.from(document.querySelectorAll('.f-acc'))
+    .map(el => el.value)
+    .filter(v => v !== "");
 
     // --- 新增這行 ---
     for(let i=0; i<qty; i++) {
@@ -274,6 +344,7 @@
             type: currentMode, void: false,
             cash: i===0 ? (parseInt(document.getElementById('f-cash').value)||0) : 0,
             bank: i===0 ? (parseInt(document.getElementById('f-bank').value)||0) : 0,
+            accessories: accList,
             batt, ps: [] 
         };
         
@@ -281,7 +352,12 @@
         const mod = (currentMode === 'sell' ? -1 : 1);
         if(db.stock[carName] !== undefined) db.stock[carName] += mod;
         if(batt && db.stock[batt] !== undefined) db.stock[batt] += mod;
-    } 
+    }
+            accList.forEach(acc => {
+                if(db.stock[acc] !== undefined) {
+                    db.stock[acc] += mod;
+    }
+});
     // --- 新增這行 ---
 
     localStorage.setItem(KEY, JSON.stringify(db));
@@ -365,6 +441,7 @@ async function loadFromCloud(e) {
             document.getElementById('f-date').valueAsDate = new Date();
             document.getElementById('f-barcode').style.backgroundColor = "";
             autoRefreshBarcode();
+            document.querySelectorAll('.f-acc').forEach(el => el.value = "");
         }
 
         function render() {
@@ -377,7 +454,12 @@ async function loadFromCloud(e) {
                     </td>
                     <td class="p-6">
                         <div class="font-bold">${l.carName}</div>
-                        <div class="text-[10px] text-slate-400 font-mono">${l.vin||'無'} / ${l.motor||'無'}</div>
+                        <div class="text-[10px] text-slate-400 font-mono">
+                        ${l.vin||'無'} / ${l.motor||'無'}
+                        <br>📞 ${l.phone||'無'}
+                        <br>📝 ${l.note||'無'}
+                        <br>🎁 ${(l.accessories||[]).join(', ') || '無'}
+                        </div>
                     </td>
                     <td class="p-6 text-right font-black text-xl ${l.type==='buy'?'text-orange-500':'text-slate-950'}">${l.type==='buy'?'-':''}$${(l.cash+l.bank).toLocaleString()}</td>
                     <td class="p-6 text-center"><button onclick="askUndo(${idx})" class="text-slate-300 text-2xl">×</button></td>
@@ -390,6 +472,13 @@ async function loadFromCloud(e) {
                 const mod = (l.type === 'sell' ? 1 : -1);
                 if(db.stock[l.carName] !== undefined) db.stock[l.carName] += mod;
                 if(l.batt && db.stock[l.batt] !== undefined) db.stock[l.batt] += mod;
+                if(l.accessories) {
+                    l.accessories.forEach(acc => {
+                        if(db.stock[acc] !== undefined) {
+                            db.stock[acc] += mod;
+        }
+    });
+}
                 l.void = true;
                 localStorage.setItem(KEY, JSON.stringify(db));
                 render();
