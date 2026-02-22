@@ -1,8 +1,5 @@
-// 最小可用 Service Worker：只負責啟用 PWA
-self.addEventListener('fetch', () => {});
-
 // 1. 定義快取名稱與版本 (每次更新 HTML 時，手動改這個編號)
-const CACHE_NAME = 'yuchill-app-v101';
+const CACHE_NAME = 'yuchill-app-v102';
 
 // 2. 列出需要快取的靜態檔案 (依據您的專案需求增減)
 const ASSETS_TO_CACHE = [
@@ -50,5 +47,6 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
 
 
