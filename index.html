@@ -188,6 +188,10 @@
         <option>後腳踏/鐵</option>
     </select>
 </div>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <input type="text" id="f-extra-item" placeholder="額外項目" class="w-full p-4 rounded-xl font-bold bg-white border border-slate-200">
+                            <input type="number" id="f-extra-cost" placeholder="額外成本 (金額)" class="w-full p-4 rounded-xl font-bold bg-white border border-slate-200">
+                        </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <input type="number" id="f-cash" inputmode="numeric" placeholder="💰 現金收" class="p-6 rounded-2xl bg-amber-50 font-black text-amber-800 text-center text-xl border border-amber-100">
@@ -231,7 +235,7 @@
 
     <script>
         const COST_MAP = { "J寄賣款(8)": 9000, "J寄賣款/車": 7500, "G青春版(8)": 5980, "Q特惠版": 5000, "W高配版": 5335, "Q特惠X防盜": 4000, "8AH": 0, "20AH": 1650, "30AH": 1970, "兒童座椅": 500, "定時器": 90, "水杯架": 70, "雙杯手機架": 155, "後照鏡2長": 75, "後座靠背": 100, "後腳踏/塑": 80, "後腳踏/鐵": 60, "維修服務": 0 };
-        const DB_VERSION = 102;
+        const DB_VERSION = 103;
 const KEY = `YUCHILL_DB_V${DB_VERSION}`;
 const PREVIOUS_VERSIONS = ["YUCHILL_DB_V101"];
 
@@ -240,6 +244,17 @@ if (!localStorage.getItem(KEY)) {
     for (const oldKey of PREVIOUS_VERSIONS) {
         const oldData = localStorage.getItem(oldKey);
         if (oldData) {
+            let parsedData = JSON.parse(oldData);
+            // --- 這裡就是「修正舊資料成本」的小工具 ---
+            if (parsedData.logs) {
+                parsedData.logs.forEach(l => {
+                    // 如果這筆是銷售，且當初沒存到成本
+                    if (l.type === 'sell' && (!l.baseCost || l.baseCost === 0)) {
+                        l.baseCost = COST_MAP[l.carName] || 0; 
+                    }
+                });
+            }
+            // -------------------------------------
             localStorage.setItem(KEY, oldData);
             console.log("資料已從", oldKey, "升級到", KEY);
             break;
@@ -326,14 +341,18 @@ if (!localStorage.getItem(KEY)) {
     const dateVal = document.getElementById('f-date').value;
     if(!dateVal) return alert("請選擇日期");
     const qty = currentMode === 'buy' ? (parseInt(document.getElementById('f-qty').value) || 1) : 1;
-    const carName = document.getElementById('f-car-type').value || "維修項目";
+    // 如果有選車組就用車組名，沒選車組但在進貨模式，就顯示「零件/配件進貨」
+            let carName = document.getElementById('f-car-type').value;
+            if (!carName) {
+                carName = (currentMode === 'buy') ? "📦 零件/配件進貨" : "🛠️ 維修服務";
+            }
     const batt = document.getElementById('f-batt').value;
     const accList = Array.from(document.querySelectorAll('.f-acc'))
     .map(el => el.value)
     .filter(v => v !== "");
 
-    // --- 新增這行 ---
-    for(let i=0; i<qty; i++) {
+        // --- 開始迴圈 ---
+        for(let i=0; i<qty; i++) {
         // 每一圈都會因為前一圈已 push 到 db.logs 而自動取得正確的下一號
         let codeToUse = (currentMode === 'buy') ? generateNextBarcode() : document.getElementById('f-barcode').value.toUpperCase();
         if(!codeToUse) codeToUse = "MANUAL";
@@ -344,6 +363,9 @@ if (!localStorage.getItem(KEY)) {
             motor: document.getElementById('f-motor').value, 
             phone: document.getElementById('f-phone').value, 
             note: document.getElementById('f-note').value, 
+            extraItem: document.getElementById('f-extra-item').value || "", 
+            extraCost: parseInt(document.getElementById('f-extra-cost').value) || 0,
+            baseCost: (currentMode === 'sell') ? (COST_MAP[carName] || 0) : 0, 
             type: currentMode, void: false,
             cash: i===0 ? (parseInt(document.getElementById('f-cash').value)||0) : 0,
             bank: i===0 ? (parseInt(document.getElementById('f-bank').value)||0) : 0,
@@ -355,14 +377,12 @@ if (!localStorage.getItem(KEY)) {
         const mod = (currentMode === 'sell' ? -1 : 1);
         if(db.stock[carName] !== undefined) db.stock[carName] += mod;
         if(batt && db.stock[batt] !== undefined) db.stock[batt] += mod;
-    }
-            accList.forEach(acc => {
-                if(db.stock[acc] !== undefined) {
-                    db.stock[acc] += mod;
-    }
-});
-    // --- 新增這行 ---
-
+        accList.forEach(acc => {
+            if(db.stock[acc] !== undefined) db.stock[acc] += mod;
+        });
+    } 
+    // --- 迴圈結束 ---
+                
     localStorage.setItem(KEY, JSON.stringify(db));
     render(); resetForm(); alert(`成功儲存 ${qty} 筆`);
 }
@@ -452,18 +472,23 @@ async function loadFromCloud(e) {
             document.getElementById('log-list').innerHTML = db.logs.map((l, idx) => `
                 <tr class="${l.void?'opacity-30 line-through':''}">
                     <td class="p-6">
-                        <div class="text-[10px] text-slate-400 font-black mb-1">${l.date}</div>
-                        <div class="font-mono font-bold uppercase">${l.barcode}</div>
-                    </td>
-                    <td class="p-6">
-                        <div class="font-bold">${l.carName}</div>
+                    <div class="font-bold">
+                    ${(l.type === 'buy' && (l.carName === '維修服務' || !l.carName)) ? '📦 零件進貨' : l.carName}
+                    </div>
+                    
                         <div class="text-[10px] text-slate-400 font-mono">
-                        ${l.vin||'無'} / ${l.motor||'無'}
-                        <br>📞 ${l.phone||'無'}
-                        <br>📝 ${l.note||'無'}
-                        <br>🎁 ${(l.accessories||[]).join(', ') || '無'}
+                        ${(l.vin || l.motor) ? `${l.vin || '無'} / ${l.motor || '無'}` : ''}
+                                                                                
+                        ${l.type === 'buy' ? `
+                        <br><span class="text-orange-600 font-bold">🔋 電池: ${l.batt || '無'}</span>
+                        <br><span class="text-orange-600 font-bold">🎁 配件: ${(l.accessories || []).join(', ') || '無'}</span>
+                        ` : `
+                        <br>📞 ${l.phone || '無'}
+                        <br>📝 ${l.note || '無'}
+                        <br>🎁 ${(l.accessories || []).join(', ') || '無'}
+                        `}
                         </div>
-                    </td>
+                        </td>
                     <td class="p-6 text-right font-black text-xl ${l.type==='buy'?'text-orange-500':'text-slate-950'}">${l.type==='buy'?'-':''}$${(l.cash+l.bank).toLocaleString()}</td>
                     <td class="p-6 text-center"><button onclick="askUndo(${idx})" class="text-slate-300 text-2xl">×</button></td>
                 </tr>`).join('');
@@ -497,9 +522,18 @@ async function loadFromCloud(e) {
             let html = `<h3 class="font-black text-xl mb-6">銷售利潤明細</h3><table class="w-full text-left"><thead><tr class="text-slate-400 text-sm border-b"><th class="pb-4">條碼</th><th class="pb-4">項目</th><th class="pb-4 text-right">利潤</th></tr></thead><tbody>`;
             activeLogs.forEach(l => {
                 const income = (l.cash + l.bank);
-                const profit = income - (l.baseCost || 0);
+                const extra = l.extraCost || 0;
+                const profit = income - (l.baseCost || 0) - extra;
                 totalProfit += profit;
-                html += `<tr class="border-b border-slate-50"><td class="py-4 font-mono text-xs">${l.barcode}</td><td class="py-4 font-bold text-sm">${l.carName}</td><td class="text-right font-black text-emerald-600">$${profit.toLocaleString()}</td></tr>`;
+                html += `
+                <tr class="border-b border-slate-50">
+                <td class="py-4 font-mono text-xs">${l.barcode}</td>
+                <td class="py-4">
+                <div class="font-bold text-sm">${l.carName}</div>
+                ${l.extraItem ? `<div class="text-[10px] text-red-400">支出: ${l.extraItem} (-$${extra})</div>` : ''}
+                </td>
+                <td class="text-right font-black text-emerald-600">$${profit.toLocaleString()}</td>
+                </tr>`;
             });
             html += `</tbody></table>`;
             document.getElementById('profit-table-area').innerHTML = html;
