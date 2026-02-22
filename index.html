@@ -237,23 +237,31 @@
         const COST_MAP = { "J寄賣款(8)": 9000, "J寄賣款/車": 7500, "G青春版(8)": 5980, "Q特惠版": 5000, "W高配版": 5335, "Q特惠X防盜": 4000, "8AH": 0, "20AH": 1650, "30AH": 1970, "兒童座椅": 500, "定時器": 90, "水杯架": 70, "雙杯手機架": 155, "後照鏡2長": 75, "後座靠背": 100, "後腳踏/塑": 80, "後腳踏/鐵": 60, "維修服務": 0 };
         const DB_VERSION = 103;
 const KEY = `YUCHILL_DB_V${DB_VERSION}`;
-const PREVIOUS_VERSIONS = ["YUCHILL_DB_V101"];
+const PREVIOUS_VERSIONS = ["YUCHILL_DB_V102", "YUCHILL_DB_V101"];
 
-// 自動升級舊版本資料
 if (!localStorage.getItem(KEY)) {
     for (const oldKey of PREVIOUS_VERSIONS) {
         const oldData = localStorage.getItem(oldKey);
         if (oldData) {
             let parsedData = JSON.parse(oldData);
-            // --- 這裡就是「修正舊資料成本」的小工具 ---
             if (parsedData.logs) {
                 parsedData.logs.forEach(l => {
-                    // 如果這筆是銷售，且當初沒存到成本
                     if (l.type === 'sell' && (!l.baseCost || l.baseCost === 0)) {
-                        l.baseCost = COST_MAP[l.carName] || 0; 
+                        // 修正舊資料利潤：車組+電池+配件 全部從 COST_MAP 抓出來加總
+                        let oldCost = (COST_MAP[l.carName] || 0);
+                        if (l.batt) oldCost += (COST_MAP[l.batt] || 0);
+                        if (l.accessories) {
+                            l.accessories.forEach(acc => { oldCost += (COST_MAP[acc] || 0); });
+                        }
+                        l.baseCost = oldCost;
                     }
                 });
             }
+            localStorage.setItem(KEY, JSON.stringify(parsedData));
+            break;
+        }
+    }
+}
             // -------------------------------------
             localStorage.setItem(KEY, oldData);
             console.log("資料已從", oldKey, "升級到", KEY);
@@ -353,9 +361,18 @@ if (!localStorage.getItem(KEY)) {
 
         // --- 開始迴圈 ---
         for(let i=0; i<qty; i++) {
-        // 每一圈都會因為前一圈已 push 到 db.logs 而自動取得正確的下一號
-        let codeToUse = (currentMode === 'buy') ? generateNextBarcode() : document.getElementById('f-barcode').value.toUpperCase();
+        let codeToUse = (currentMode === 'buy') ? generateNextBarcode(i) : document.getElementById('f-barcode').value.toUpperCase();
         if(!codeToUse) codeToUse = "MANUAL";
+
+        // --- 1. 先計算這台車賣出去時的所有「硬成本」 ---
+        let totalBaseCost = 0;
+        if (currentMode === 'sell') {
+            totalBaseCost += (COST_MAP[carName] || 0); // 車組進價
+            if (batt) totalBaseCost += (COST_MAP[batt] || 0); // 電池進價
+            accList.forEach(acc => {
+                totalBaseCost += (COST_MAP[acc] || 0); // 配件進價
+            });
+        }
 
         const entry = {
             date: dateVal, carName, barcode: codeToUse,
@@ -365,13 +382,18 @@ if (!localStorage.getItem(KEY)) {
             note: document.getElementById('f-note').value, 
             extraItem: document.getElementById('f-extra-item').value || "", 
             extraCost: parseInt(document.getElementById('f-extra-cost').value) || 0,
-            baseCost: (currentMode === 'sell') ? (COST_MAP[carName] || 0) : 0, 
+            
+            // --- 2. 這裡改用計算好的總成本 ---
+            baseCost: totalBaseCost, 
+            // ------------------------------
+
             type: currentMode, void: false,
             cash: i===0 ? (parseInt(document.getElementById('f-cash').value)||0) : 0,
             bank: i===0 ? (parseInt(document.getElementById('f-bank').value)||0) : 0,
             accessories: accList,
             batt, ps: [] 
         };
+        
         
         db.logs.unshift(entry); // 存入後，下一圈 generateNextBarcode 就會看到這一筆
         const mod = (currentMode === 'sell' ? -1 : 1);
@@ -468,31 +490,37 @@ async function loadFromCloud(e) {
         }
 
         function render() {
-            document.getElementById('stk-grid').innerHTML = Object.entries(db.stock).map(([k,v]) => `<div class="bg-white p-4 rounded-2xl border text-center shadow-sm"><div class="text-[10px] font-black text-slate-300 truncate mb-1">${k}</div><div class="text-xl font-black ${v<=0?'text-slate-200':'text-indigo-600'}">${v}</div></div>`).join('');
-            document.getElementById('log-list').innerHTML = db.logs.map((l, idx) => `
-                <tr class="${l.void?'opacity-30 line-through':''}">
-                    <td class="p-6">
-                    <div class="font-bold">
+    document.getElementById('stk-grid').innerHTML = Object.entries(db.stock).map(([k,v]) => `<div class="bg-white p-4 rounded-2xl border text-center shadow-sm"><div class="text-[10px] font-black text-slate-300 truncate mb-1">${k}</div><div class="text-xl font-black ${v<=0?'text-slate-200':'text-indigo-600'}">${v}</div></div>`).join('');
+    
+    document.getElementById('log-list').innerHTML = db.logs.map((l, idx) => `
+        <tr class="${l.void?'opacity-30 line-through':''}">
+            <td class="p-6">
+                <div class="text-[10px] font-mono text-indigo-500 font-bold mb-1">${l.date} | ${l.barcode}</div>
+                
+                <div class="font-bold text-slate-800">
                     ${(l.type === 'buy' && (l.carName === '維修服務' || !l.carName)) ? '📦 零件進貨' : l.carName}
-                    </div>
+                </div>
+                
+                <div class="text-[10px] text-slate-400 font-mono leading-relaxed">
+                    ${(l.vin || l.motor) ? `${l.vin || '無'} / ${l.motor || '無'}` : ''}
                     
-                        <div class="text-[10px] text-slate-400 font-mono">
-                        ${(l.vin || l.motor) ? `${l.vin || '無'} / ${l.motor || '無'}` : ''}
-                                                                                
-                        ${l.type === 'buy' ? `
+                    ${l.type === 'buy' ? `
                         <br><span class="text-orange-600 font-bold">🔋 電池: ${l.batt || '無'}</span>
                         <br><span class="text-orange-600 font-bold">🎁 配件: ${(l.accessories || []).join(', ') || '無'}</span>
-                        ` : `
-                        <br>📞 ${l.phone || '無'}
-                        <br>📝 ${l.note || '無'}
-                        <br>🎁 ${(l.accessories || []).join(', ') || '無'}
-                        `}
-                        </div>
-                        </td>
-                    <td class="p-6 text-right font-black text-xl ${l.type==='buy'?'text-orange-500':'text-slate-950'}">${l.type==='buy'?'-':''}$${(l.cash+l.bank).toLocaleString()}</td>
-                    <td class="p-6 text-center"><button onclick="askUndo(${idx})" class="text-slate-300 text-2xl">×</button></td>
-                </tr>`).join('');
-        }
+                    ` : `
+                        <br>📞 ${l.phone || '無'} | 📝 ${l.note || '無'}
+                        <br><span class="text-indigo-600">🔋 電池: ${l.batt || '無'}</span>
+                        <br><span class="text-indigo-600">🎁 配件: ${(l.accessories || []).join(', ') || '無'}</span>
+                        ${l.extraItem ? `<br><span class="text-red-500">⚠️ 額外支出: ${l.extraItem} (-$${l.extraCost})</span>` : ''}
+                    `}
+                </div>
+            </td>
+            <td class="p-6 text-right font-black text-xl ${l.type==='buy'?'text-orange-500':'text-slate-950'}">
+                ${l.type==='buy'?'-':''}$${(l.cash+l.bank).toLocaleString()}
+            </td>
+            <td class="p-6 text-center"><button onclick="askUndo(${idx})" class="text-slate-300 text-2xl">×</button></td>
+        </tr>`).join('');
+}
 
         function askUndo(idx) {
             if(confirm("確定刪除？")) {
