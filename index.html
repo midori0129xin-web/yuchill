@@ -121,7 +121,7 @@
                                     <option value="">- 車組 -</option>
                                     <option data-code="J">J寄賣款(8)</option><option data-code="J">J寄賣款/車</option><option data-code="G">G青春版(8)</option>
                                     <option data-code="Q">Q特惠版</option><option data-code="W">W高配版</option><option data-code="QX">Q特惠X防盜</option>
-                                    <option data-code="S" value="維修服務">維修服務</option>
+                                    <option data-code="F">旗艦版</option><option data-code="S" value="維修服務">維修服務</option>
                                 </select>
                                 <select id="f-color" onchange="autoRefreshBarcode()" class="p-4 rounded-xl font-black bg-white border border-slate-200">
                                     <option value="">- 顏色 -</option>
@@ -135,7 +135,7 @@
                                 <input type="text" id="f-note" placeholder="客戶備註" class="w-full p-4 rounded-xl font-bold bg-white text-base border border-slate-200">
                             </div>
                             <select id="f-batt" class="w-full p-4 rounded-xl font-black bg-white border border-slate-200">
-                                <option value="">- 電池 -</option><option>8AH</option><option>20AH</option><option>30AH</option>
+                                <option value="">- 電池 -</option><option>8AH</option><option>20AH</option><option>30AH</option><option>26AH</option>
                             </select>
                         </div>
                         <!-- 配件區（四欄下拉） -->
@@ -234,7 +234,7 @@
     </div>
 
     <script>
-        const COST_MAP = { "J寄賣款(8)": 9000, "J寄賣款/車": 7500, "G青春版(8)": 5980, "Q特惠版": 5000, "W高配版": 5335, "Q特惠X防盜": 4000, "8AH": 0, "20AH": 1650, "30AH": 1970, "兒童座椅": 500, "定時器": 90, "水杯架": 70, "雙杯手機架": 155, "後照鏡2長": 75, "後座靠背": 100, "後腳踏/塑": 80, "後腳踏/鐵": 60, "維修服務": 0 };
+        const COST_MAP = { "J寄賣款(8)": 9000, "J寄賣款/車": 7500, "G青春版(8)": 5980, "Q特惠版": 5000, "W高配版": 5335, "F旗艦版": 9190, "Q特惠X防盜": 4000, "8AH": 0, "20AH": 2365, "26AH": 2485, "30AH": 2020, "兒童座椅": 500, "定時器": 90, "水杯架": 70, "雙杯手機架": 155, "後照鏡2長": 75, "後座靠背": 100, "後腳踏/塑": 80, "後腳踏/鐵": 60, "維修服務": 0 };
         const DB_VERSION = 103;
 const KEY = `YUCHILL_DB_V${DB_VERSION}`;
 const PREVIOUS_VERSIONS = ["YUCHILL_DB_V102", "YUCHILL_DB_V101"];
@@ -267,7 +267,7 @@ if (!localStorage.getItem(KEY)) {
 
         
         let db = JSON.parse(localStorage.getItem(KEY)) || { 
-            stock: { "J寄賣款(8)":0, "J寄賣款/車":0, "G青春版(8)":0, "Q特惠版":0, "W高配版":0, "Q特惠X防盜":0, "8AH":0, "20AH":0, "30AH":0, "兒童座椅":0, "定時器":0, "水杯架":0, "雙杯手機架":0, "後照鏡2長":0, "後座靠背":0, "後腳踏/塑":0, "後腳踏/鐵":0 }, 
+            stock: { "J寄賣款(8)":0, "J寄賣款/車":0, "G青春版(8)":0, "Q特惠版":0, "W高配版":0, "F旗艦版":0, "Q特惠X防盜":0, "8AH":0, "20AH":0, "26AH":0, "30AH":0, "兒童座椅":0, "定時器":0, "水杯架":0, "雙杯手機架":0, "後照鏡2長":0, "後座靠背":0, "後腳踏/塑":0, "後腳踏/鐵":0 }, 
             logs: [],
             withdraws: [] 
         };
