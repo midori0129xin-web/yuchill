@@ -546,7 +546,8 @@ async function loadFromCloud(e) {
             activeLogs.forEach(l => {
                 const income = (l.cash + l.bank);
                 const extra = l.extraCost || 0;
-                const profit = income - (l.baseCost || 0) - extra;
+                const currentCost = getRealCost(l); // 這是插入的新行，用來確保成本一定有算到
+                const profit = income - currentCost - extra; // 這裡改用 currentCost 來減
                 totalProfit += profit;
                 html += `
                 <tr class="border-b border-slate-50">
@@ -574,6 +575,20 @@ async function loadFromCloud(e) {
             document.getElementById('withdraw-list').innerHTML = db.withdraws.map((w, i) => `<div class="flex justify-between bg-slate-800 p-3 rounded-xl"><span>${w.date}</span><b>$${w.amount}</b></div>`).join('');
         }
 
+        // 這個函式會根據目前的項目名稱，即時算出該筆紀錄應有的總成本
+        function getRealCost(l) {
+            // 如果資料本來就有 baseCost 且不為 0，就用原本的
+            if (l.baseCost && l.baseCost > 0) return l.baseCost;
+            
+            // 如果沒有 baseCost (雲端丟失了)，則根據名稱重新計算
+            let cost = (COST_MAP[l.carName] || 0);
+            if (l.batt) cost += (COST_MAP[l.batt] || 0);
+            if (l.accessories) {
+                l.accessories.forEach(acc => { cost += (COST_MAP[acc] || 0); });
+            }
+            return cost;
+        }
+        
         function addWithdraw() {
             const amt = parseInt(document.getElementById('f-withdraw').value);
             if(amt > 0) {
