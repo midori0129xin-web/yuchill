@@ -289,7 +289,7 @@ if (!localStorage.getItem(KEY)) {
             resetForm(); 
         }
 
-        function generateNextBarcode(index = 0) {
+        function generateNextBarcode() {
     const carEl = document.getElementById('f-car-type');
     const carCode = carEl.options[carEl.selectedIndex]?.dataset.code;
     const colorCode = document.getElementById('f-color').value || "0"; // 這裡會自動帶入 1~2 位數
@@ -313,8 +313,8 @@ if (!localStorage.getItem(KEY)) {
         if (nums.length > 0) maxNum = Math.max(...nums);
     }
 
-    // 重點：maxNum + 1 是下一筆起始號，再加上 index 達成批次遞增
-    const nextNum = (maxNum + 1 + index).toString().padStart(2, '0');
+    // 重點：maxNum + 1 是下一筆起始號達成批次遞增
+    const nextNum = (maxNum + 1 ).toString().padStart(2, '0');
     
     return `${carCode}${colorCode}${shortDate}${nextNum}`;
 }
@@ -356,7 +356,7 @@ if (!localStorage.getItem(KEY)) {
 
         // --- 開始迴圈 ---
         for(let i=0; i<qty; i++) {
-        let codeToUse = (currentMode === 'buy') ? generateNextBarcode(i) : document.getElementById('f-barcode').value.toUpperCase();
+        let codeToUse = (currentMode === 'buy') ? generateNextBarcode() : document.getElementById('f-barcode').value.toUpperCase();
         if(!codeToUse) codeToUse = "MANUAL";
 
         // --- 1. 先計算這台車賣出去時的所有「硬成本」 ---
