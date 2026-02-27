@@ -225,7 +225,7 @@
             <div class="bg-slate-900 text-white rounded-[2.5rem] p-8 shadow-2xl max-w-md">
                 <h3 class="font-black text-xl mb-4">利潤提領紀錄</h3>
                 <div class="space-y-4">
-                    <input type="number" id="f-withdraw" placeholder="輸入提領金額" class="w-full p-4 rounded-xl bg-slate-800 border-none text-white text-2xl font-black">
+                    <input type="tel" inputmode="numeric" pattern="[0-9]*" id="f-withdraw" placeholder="輸入提領金額" class="w-full p-4 rounded-xl bg-slate-800 border-none text-white text-2xl font-black">
                     <button onclick="addWithdraw()" class="w-full py-4 rounded-xl bg-indigo-500 font-black hover:bg-indigo-400">確認提領</button>
                 </div>
                 <div id="withdraw-list" class="mt-8 space-y-2 max-h-60 overflow-y-auto"></div>
